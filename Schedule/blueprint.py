@@ -3,7 +3,7 @@ import json
 
 from flask import Blueprint, jsonify, request
 
-from Schedule.utils import count_money, get_sum_of_checkouts, get_money_record, is_date_in_last
+from Schedule.utils import count_money, get_sum_of_checkouts, get_money_record, is_date_in_last, check_the_taking
 from app import db
 from models import *
 
@@ -143,14 +143,8 @@ def create_seans():
     date = datetime.strptime(data['date'], '%Y-%m-%d').date()
     time = datetime.strptime(data['time'], '%H:%M').time()
 
-    reserv = Reservation.query\
-        .filter(Reservation.date == date).\
-        filter(Reservation.time == time).\
-        filter(Reservation.room == room). \
-        first()
-
-    if reserv is not None:
-        return {"msg": "Время занято"}, 400
+    if check_the_taking(date, room, time, data['duration']):
+        return {"msg": "Зал занят"}, 400
 
     if is_date_in_last(date):
         return {"msg": "Дата уже прошла"}, 400
