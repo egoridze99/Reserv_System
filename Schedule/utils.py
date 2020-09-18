@@ -100,10 +100,16 @@ def check_the_taking(date, room, time, duration):
         delta = timedelta(hours=reserv.duration)
         reserv_end_time = (dt.datetime.combine(dt.date(1, 1, 1), reserv_start_time) + delta).time()
 
+        new_delta = timedelta(hours=reserv.duration)
+        new_reserv_end_time = (dt.datetime.combine(dt.date(1, 1, 1), time) + new_delta).time()
+
         if time == reserv_start_time:
             return True
 
-        if time < reserv_end_time:
+        if time < reserv_start_time <= new_reserv_end_time:
+            return True
+
+        if reserv_start_time < time <= reserv_end_time:
             return True
 
     return False
