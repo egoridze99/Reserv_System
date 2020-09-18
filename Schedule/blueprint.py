@@ -83,10 +83,10 @@ def update_seans(id):
             and data['rent'] != 0:
         return {"message": "Клиент не заплатил!"}, 400
 
-    if date < datetime.now().date():
+    if date < datetime.now().date() and data['status'] != ReservStatusEnum.finished.name:
         return {"message": "Вы пытаетесь отредактировать старый сеанс!"}, 400
 
-    if date != datetime.now().date() and data['status'] == ReservStatusEnum.finished.name:
+    if date > datetime.now().date() and data['status'] == ReservStatusEnum.finished.name:
         return {"message": "Как может завершиться сеанс в будещем?)"}, 400
 
     for check in data['checkouts']:

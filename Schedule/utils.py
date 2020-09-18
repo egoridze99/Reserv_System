@@ -42,8 +42,8 @@ def count_money(date, income: int, cash: int, card: int, expense: int) -> Money 
         except builtins.TypeError:
             return None
 
-    money_record.income += income
-    money_record.expense += expense
+    money_record.income += int(income)
+    money_record.expense += int(expense)
     money_record.proceeds = money_record.income - money_record.expense
     money_record.all_by_card += int(card)
     money_record.all_by_cash += int(cash)
