@@ -26,11 +26,15 @@ def get_seans():
     if not room or not date:
         return {"message": "Не все данные"}, 400
 
-    seanses = Reservation.query.join(Room).filter(Room.name == room).filter(Reservation.date == date).all()
+    if room == 'all':
+        seanses = Reservation.query.filter(Reservation.date == date).all()
+    else:
+        seanses = Reservation.query.join(Room).filter(Room.name == room).filter(Reservation.date == date).all()
 
     seanses = [{
         'id': seans.id,
         'date': seans.date,
+        'room': seans.room.name,
         'time': str(seans.time)[:-3],
         'duration': seans.duration,
         'count': seans.count,
@@ -62,6 +66,7 @@ def update_seans(id):
     seans = Reservation.query.filter(Reservation.id == id).all()
     room = Room.query.filter(Room.name == data['room']).first()
     guest = Guest.query.filter(Guest.telephone == data['guest']['tel']).first()
+    time = datetime.strptime(data['time'], '%H:%M').time()
 
     if guest is None:
         guest = Guest(name=data['guest']['name'], telephone=data['guest']['tel'])
@@ -143,7 +148,7 @@ def create_seans():
     date = datetime.strptime(data['date'], '%Y-%m-%d').date()
     time = datetime.strptime(data['time'], '%H:%M').time()
 
-    if check_the_taking(date, room, time, data['duration']):
+    if check_the_taking(date, room, time, int(data['duration'])):
         return {"msg": "Зал занят"}, 400
 
     if is_date_in_last(date):
