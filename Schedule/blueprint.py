@@ -148,7 +148,7 @@ def create_seans():
     date = datetime.strptime(data['date'], '%Y-%m-%d').date()
     time = datetime.strptime(data['time'], '%H:%M').time()
 
-    if check_the_taking(date, room, time, int(data['duration'])):
+    if check_the_taking(date, room, time, float(data['duration'])):
         return {"msg": "Зал занят"}, 400
 
     if is_date_in_last(date):
