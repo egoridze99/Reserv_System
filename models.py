@@ -123,3 +123,4 @@ class AdminUser(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     login = db.Column(db.String(40), nullable=False)
     password = db.Column(db.String(200), nullable=False)
+    role = db.Column(db.Integer, default=0)

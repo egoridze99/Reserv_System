@@ -1,7 +1,9 @@
 import builtins
+import hashlib
 import json
 
 from flask import Blueprint, jsonify, request
+from flask_jwt_extended import jwt_required, create_access_token
 
 from Schedule.utils import count_money, get_sum_of_checkouts, get_money_record, is_date_in_last, check_the_taking
 from app import db
@@ -11,6 +13,7 @@ schedule = Blueprint('schedule', __name__)
 
 
 @schedule.route('/rooms')
+@jwt_required
 def get_rooms():
     rooms = Room.query.all()
     room_names = [room.name for room in rooms]
@@ -19,6 +22,7 @@ def get_rooms():
 
 
 @schedule.route('/seans')
+@jwt_required
 def get_seans():
     room = request.args.get('room')
     date = request.args.get('date')
@@ -59,6 +63,7 @@ def get_seans():
 
 
 @schedule.route('/seans/<id>', methods=['PUT'])
+@jwt_required
 def update_seans(id):
     data = request.data
     data = json.loads(data)
@@ -134,6 +139,7 @@ def update_seans(id):
 
 
 @schedule.route('/seans', methods=['POST'])
+@jwt_required
 def create_seans():
     data = request.data
     data = json.loads(data)
@@ -174,6 +180,7 @@ def create_seans():
 
 
 @schedule.route('/money')
+@jwt_required
 def get_money():
     date = request.args.get("date")
     money = get_money_record(date)
