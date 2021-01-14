@@ -31,9 +31,15 @@ def index():
     if password != user.password:
         return jsonify({"msg": "Неверный пароль"}), 400
 
-    jwt = create_access_token(identity={"login": login, "role": user.role}, expires_delta=timedelta(hours=6))
+    jwt = create_access_token(identity={
+        "login": login,
+        "role": user.role,
+        "name": f"{user.name} {user.surname}"
+    }, expires_delta=timedelta(hours=6))
 
-    return jsonify({"token": "Bearer " + jwt, "role": user.role}), 200
+    print(jwt)
+
+    return jsonify({"token": "Bearer " + jwt, "role": user.role, "name": f"{user.name} {user.surname}"}), 200
 
 
 @admin.route("/common")
@@ -134,6 +140,8 @@ def get_canceled():
         'count': seans.count,
         'film': seans.film,
         'note': seans.note,
+        'name': seans.author,
+        'room': seans.room.name,
         'status': seans.status.name,
         'card': seans.card,
         'cash': seans.cash,
@@ -206,6 +214,7 @@ def reservs_with_number():
             "name": seans.guest.name,
             "tel": seans.guest.telephone
         },
+        'name': seans.author,
         'checkout': [{
             'id': checkout.id,
             'summ': checkout.summ,

@@ -93,6 +93,7 @@ class Reservation(db.Model):
     guest_id = db.Column(db.Integer, db.ForeignKey('guest.id'))
     film = db.Column(db.String(170))
     note = db.Column(db.Text)
+    author = db.Column(db.String(120))
     checkout = db.relationship('Checkout', secondary=checkout_reservaion)
 
     status = db.Column(db.Enum(ReservStatusEnum), default=ReservStatusEnum.not_allowed, nullable=False)
@@ -124,3 +125,5 @@ class AdminUser(db.Model):
     login = db.Column(db.String(40), nullable=False)
     password = db.Column(db.String(200), nullable=False)
     role = db.Column(db.Integer, default=0)
+    name = db.Column(db.String(40))
+    surname = db.Column(db.String(40))

@@ -3,7 +3,7 @@ import hashlib
 import json
 
 from flask import Blueprint, jsonify, request
-from flask_jwt_extended import jwt_required, create_access_token
+from flask_jwt_extended import jwt_required, create_access_token, get_jwt_identity
 
 from Schedule.utils import count_money, get_sum_of_checkouts, get_money_record, is_date_in_last, check_the_taking
 from app import db
@@ -43,6 +43,7 @@ def get_seans():
         'duration': seans.duration,
         'count': seans.count,
         'film': seans.film,
+        'name': seans.author,
         'note': seans.note,
         'status': seans.status.name,
         'card': seans.card,
@@ -143,6 +144,7 @@ def update_seans(id):
 def create_seans():
     data = request.data
     data = json.loads(data)
+    name = get_jwt_identity()["name"]
 
     room = Room.query.filter(Room.name == data['room']).first()
     guest = Guest.query.filter(Guest.telephone == data['guest']['tel']).first()
@@ -169,7 +171,8 @@ def create_seans():
         note=data['note'],
         sum_rent=data['rent'],
         room=room,
-        guest=guest
+        guest=guest,
+        author=name
     )
     db.session.add(reserv)
     try:
