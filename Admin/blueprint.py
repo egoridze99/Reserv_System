@@ -170,6 +170,8 @@ def new_user():
 
     login = request.json.get("login")
     password = request.json.get("password")
+    name = request.json.get("name")
+    surname = request.json.get("surname")
 
     user = AdminUser.query.filter(AdminUser.login == login).first()
 
@@ -179,11 +181,17 @@ def new_user():
     if not password:
         return {"msg": "Пароль пустой"}, 400
 
+    if not name:
+        return {"msg": "Имя пустое"}, 400
+
+    if not surname:
+        return {"msg": "Фамилия пустая"}, 400
+
     if user:
         return {"msg": "Такой пользователь уже есть"}, 400
 
     password = hashlib.md5(password.encode()).hexdigest()
-    user = AdminUser(login=login, password=password)
+    user = AdminUser(login=login, password=password, name=name, surname=surname)
 
     db.session.add(user)
     try:
@@ -191,6 +199,7 @@ def new_user():
         return {"message": "ok"}, 200
     except Exception:
         return {"message": "error"}, 400
+
 
 @admin.route("/reservs", methods=["GET"])
 @jwt_required
