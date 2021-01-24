@@ -10,6 +10,7 @@ admin = Blueprint('myadmin', __name__)
 
 @admin.route('/login', methods=["POST"])
 def index():
+    print("*")
     if not request.is_json:
         return jsonify({"msg": "Ошибка сервера"}), 400
 
@@ -109,7 +110,7 @@ def get_common_info():
     return jsonify(res), 200
 
 
-@admin.route("/canceled")
+@admin.route("/statused")
 @jwt_required
 def get_canceled():
     identity = get_jwt_identity()
@@ -119,18 +120,34 @@ def get_canceled():
 
     untill = request.args.get('untill')
     till = request.args.get('till')
+    mode = request.args.get('mode')
 
-    if untill == till:
-        seanses = Reservation.query\
-            .filter(Reservation.date == till)\
-            .filter(Reservation.status == ReservStatusEnum.canceled)\
-            .all()
+    if mode == 'canceled':
+        if untill == till:
+            seanses = Reservation.query\
+                .filter(Reservation.date == till)\
+                .filter(Reservation.status == ReservStatusEnum.canceled)\
+                .all()
+        else:
+            seanses = Reservation.query\
+                .filter(Reservation.date >= untill)\
+                .filter(Reservation.date <= till) \
+                .filter(Reservation.status == ReservStatusEnum.canceled)\
+                .all()
     else:
-        seanses = Reservation.query\
-            .filter(Reservation.date >= untill)\
-            .filter(Reservation.date <= till) \
-            .filter(Reservation.status == ReservStatusEnum.canceled)\
-            .all()
+        if untill == till:
+            seanses = Reservation.query\
+                .filter(Reservation.date == till)\
+                .filter(Reservation.status != ReservStatusEnum.canceled) \
+                .filter(Reservation.status != ReservStatusEnum.finished) \
+                .all()
+        else:
+            seanses = Reservation.query\
+                .filter(Reservation.date >= untill)\
+                .filter(Reservation.date <= till) \
+                .filter(Reservation.status != ReservStatusEnum.canceled) \
+                .filter(Reservation.status != ReservStatusEnum.finished) \
+                .all()
 
     seanses = [{
         'id': seans.id,

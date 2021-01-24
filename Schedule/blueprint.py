@@ -22,7 +22,7 @@ def get_rooms():
 
 
 @schedule.route('/seans')
-@jwt_required
+# @jwt_required
 def get_seans():
     room = request.args.get('room')
     date = request.args.get('date')
