@@ -1,9 +1,8 @@
 import builtins
-import hashlib
 import json
 
 from flask import Blueprint, jsonify, request
-from flask_jwt_extended import jwt_required, create_access_token, get_jwt_identity
+from flask_jwt_extended import jwt_required, get_jwt_identity
 
 from Schedule.utils import count_money, get_sum_of_checkouts, get_money_record, is_date_in_last, check_the_taking
 from app import db
@@ -22,7 +21,7 @@ def get_rooms():
 
 
 @schedule.route('/seans')
-# @jwt_required
+@jwt_required
 def get_seans():
     room = request.args.get('room')
     date = request.args.get('date')
@@ -68,6 +67,7 @@ def get_seans():
 def update_seans(id):
     data = request.data
     data = json.loads(data)
+    role = get_jwt_identity()["role"]
 
     seans = Reservation.query.filter(Reservation.id == id).all()
     room = Room.query.filter(Room.name == data['room']).first()
@@ -85,7 +85,8 @@ def update_seans(id):
     checkouts = []
     date = seans.date
 
-    if seans.status == ReservStatusEnum.finished:
+    if seans.status == ReservStatusEnum.finished \
+            and role != 1:
         return {"message": "Нельзя изменять завершенные сеансы!"}, 400
 
     if data['card'] == 0 \
@@ -94,7 +95,9 @@ def update_seans(id):
             and data['rent'] != 0:
         return {"message": "Клиент не заплатил!"}, 400
 
-    if date < datetime.now().date() and data['status'] != ReservStatusEnum.finished.name:
+    if date < datetime.now().date() \
+            and data['status'] != ReservStatusEnum.finished.name \
+            and role != 1:
         return {"message": "Вы пытаетесь отредактировать старый сеанс!"}, 400
 
     if date > datetime.now().date() and data['status'] == ReservStatusEnum.finished.name:

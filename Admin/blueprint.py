@@ -10,7 +10,6 @@ admin = Blueprint('myadmin', __name__)
 
 @admin.route('/login', methods=["POST"])
 def index():
-    print("*")
     if not request.is_json:
         return jsonify({"msg": "Ошибка сервера"}), 400
 
