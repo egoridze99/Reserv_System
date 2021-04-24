@@ -11,6 +11,10 @@ class ReservStatusEnum(enum.Enum):
     finished = 'finished'
     canceled = 'canceled'
 
+class EmployeeRoleEnum(enum.Enum):
+    root = "root"
+    admin = "admin"
+    operator = "operator"
 
 class Room(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -124,6 +128,6 @@ class AdminUser(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     login = db.Column(db.String(40), nullable=False)
     password = db.Column(db.String(200), nullable=False)
-    role = db.Column(db.Integer, default=0)
+    role = db.Column(db.Enum(EmployeeRoleEnum), default=EmployeeRoleEnum.admin)
     name = db.Column(db.String(40))
     surname = db.Column(db.String(40))

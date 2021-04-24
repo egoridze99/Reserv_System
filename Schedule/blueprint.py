@@ -69,6 +69,9 @@ def update_seans(id):
     data = json.loads(data)
     role = get_jwt_identity()["role"]
 
+    if EmployeeRoleEnum[role] == EmployeeRoleEnum.operator:
+        return {"message": "У вас не хватает прав на это"}, 403
+
     seans = Reservation.query.filter(Reservation.id == id).all()
     room = Room.query.filter(Room.name == data['room']).first()
     guest = Guest.query.filter(Guest.telephone == data['guest']['tel']).first()
@@ -86,7 +89,7 @@ def update_seans(id):
     date = seans.date
 
     if seans.status == ReservStatusEnum.finished \
-            and role != 1:
+            and role != EmployeeRoleEnum.root:
         return {"message": "Нельзя изменять завершенные сеансы!"}, 400
 
     if data['card'] == 0 \
@@ -97,7 +100,7 @@ def update_seans(id):
 
     if date < datetime.now().date() \
             and data['status'] != ReservStatusEnum.finished.name \
-            and role != 1:
+            and role != EmployeeRoleEnum.root:
         return {"message": "Вы пытаетесь отредактировать старый сеанс!"}, 400
 
     if date > datetime.now().date() and data['status'] == ReservStatusEnum.finished.name:
@@ -148,6 +151,10 @@ def create_seans():
     data = request.data
     data = json.loads(data)
     name = get_jwt_identity()["name"]
+    role = get_jwt_identity()["role"]
+
+    if EmployeeRoleEnum[role] == EmployeeRoleEnum.operator:
+        return {"message": "У вас не хватает прав на это"}, 403
 
     room = Room.query.filter(Room.name == data['room']).first()
     guest = Guest.query.filter(Guest.telephone == data['guest']['tel']).first()

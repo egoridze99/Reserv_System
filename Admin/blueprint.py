@@ -33,22 +33,21 @@ def index():
 
     jwt = create_access_token(identity={
         "login": login,
-        "role": user.role,
+        "role": user.role.value,
         "name": f"{user.name} {user.surname}"
     }, expires_delta=timedelta(hours=6))
 
-    print(jwt)
-
-    return jsonify({"token": "Bearer " + jwt, "role": user.role, "name": f"{user.name} {user.surname}"}), 200
+    return jsonify({"token": "Bearer " + jwt, "role": user.role.value, "name": f"{user.name} {user.surname}"}), 200
 
 
 @admin.route("/common")
 @jwt_required
 def get_common_info():
     identity = get_jwt_identity()
+    role = identity["role"]
 
-    if identity["role"] != 1:
-        return 403
+    if EmployeeRoleEnum[role] != EmployeeRoleEnum.root:
+        return {"message": "Недостаточно прав"}, 403
 
     untill = request.args.get('untill')
     till = request.args.get('till')
@@ -113,9 +112,10 @@ def get_common_info():
 @jwt_required
 def get_canceled():
     identity = get_jwt_identity()
+    role = identity["role"]
 
-    if identity["role"] != 1:
-        return 403
+    if EmployeeRoleEnum[role] != EmployeeRoleEnum.root:
+        return {"message": "Недостаточно прав"}, 403
 
     untill = request.args.get('untill')
     till = request.args.get('till')
@@ -180,14 +180,16 @@ def get_canceled():
 @jwt_required
 def new_user():
     identity = get_jwt_identity()
+    role = identity["role"]
 
-    if identity["role"] != 1:
-        return 403
+    if EmployeeRoleEnum[role] != EmployeeRoleEnum.root:
+        return {"message": "Недостаточно прав"}, 403
 
     login = request.json.get("login")
     password = request.json.get("password")
     name = request.json.get("name")
     surname = request.json.get("surname")
+    role = request.json.get("role")
 
     user = AdminUser.query.filter(AdminUser.login == login).first()
 
@@ -207,7 +209,7 @@ def new_user():
         return {"msg": "Такой пользователь уже есть"}, 400
 
     password = hashlib.md5(password.encode()).hexdigest()
-    user = AdminUser(login=login, password=password, name=name, surname=surname)
+    user = AdminUser(login=login, password=password, name=name, surname=surname, role=EmployeeRoleEnum[role].value)
 
     db.session.add(user)
     try:
