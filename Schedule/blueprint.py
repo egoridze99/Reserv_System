@@ -3,7 +3,7 @@ import json
 
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
-
+from datetime import datetime
 from Schedule.utils import count_money, get_sum_of_checkouts, get_money_record, is_date_in_last, check_the_taking
 from app import db
 from models import *
@@ -48,6 +48,7 @@ def get_seans():
         'card': seans.card,
         'cash': seans.cash,
         'rent': seans.sum_rent,
+        'created_at': seans.created_at,
         'guest': {
             "name": seans.guest.name,
             "tel": seans.guest.telephone
@@ -136,6 +137,7 @@ def update_seans(id):
     seans.guest = guest
     seans.checkout = checkouts
 
+
     try:
         db.session.add(seans)
         db.session.commit()
@@ -182,14 +184,15 @@ def create_seans():
         sum_rent=data['rent'],
         room=room,
         guest=guest,
-        author=name
+        author=name,
+        created_at=datetime.today().strftime("%d-%m-%Y")
     )
     db.session.add(reserv)
     try:
         db.session.commit()
         return {"message": "ok"}, 200
     except Exception:
-        return {"message": "error"}, 400
+        return {"msg": "error"}, 400
 
 
 @schedule.route('/money')

@@ -162,6 +162,7 @@ def get_canceled():
         'card': seans.card,
         'cash': seans.cash,
         'rent': seans.sum_rent,
+        'created_at': seans.created_at,
         'guest': {
             "name": seans.guest.name,
             "tel": seans.guest.telephone
@@ -237,6 +238,7 @@ def reservs_with_number():
         'card': seans.card,
         'cash': seans.cash,
         'rent': seans.sum_rent,
+        'created_at': seans.created_at,
         'guest': {
             "name": seans.guest.name,
             "tel": seans.guest.telephone

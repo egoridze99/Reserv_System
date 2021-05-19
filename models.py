@@ -99,6 +99,7 @@ class Reservation(db.Model):
     note = db.Column(db.Text)
     author = db.Column(db.String(120))
     checkout = db.relationship('Checkout', secondary=checkout_reservaion)
+    created_at = db.Column(db.String(10))
 
     status = db.Column(db.Enum(ReservStatusEnum), default=ReservStatusEnum.not_allowed, nullable=False)
 
