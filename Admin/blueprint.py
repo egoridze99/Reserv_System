@@ -1,4 +1,5 @@
 import hashlib
+import re
 
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_claims, get_jwt_identity
@@ -252,3 +253,11 @@ def reservs_with_number():
     } for seans in seanses]
 
     return jsonify(seanses), 200
+
+@admin.route("/telephones")
+def get_telephones():
+    phone_pattern = r'[\+]?[78][\-]?[\d]{3}[\-]?[\d]{3}[\-]?[\d]{2}[\-]?[\d]{2}'
+    guests = Guest.query.all()
+    result = [guest.telephone for guest in guests if re.fullmatch(phone_pattern, guest.telephone)]
+
+    return jsonify(result), 200

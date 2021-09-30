@@ -11,6 +11,7 @@ manager = Manager(app)
 manager.add_command('db', MigrateCommand)
 
 
+# py manager.py get_telephones
 @manager.command
 def get_telephones():
     FILE_NAME = "telephones.txt"
