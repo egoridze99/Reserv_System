@@ -81,6 +81,7 @@ def update_seans(id):
     data = request.data
     data = json.loads(data)
     role = get_jwt_identity()["role"]
+    cinema_id = data["cinema_id"]
 
     if EmployeeRoleEnum[role] == EmployeeRoleEnum.operator:
         return {"message": "У вас не хватает прав на это"}, 403
