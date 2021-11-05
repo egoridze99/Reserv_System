@@ -8,3 +8,4 @@ class Config:
     JWT_SECRET_KEY = 'Sy6e_r!^qwer.dedez'
     FLASK_ADMIN_SWATCH = 'cerulean'
     SECRET_KEY = 'Sy6e_r!^qwer.dedez'
+    RENDER_AS_BATCH = True

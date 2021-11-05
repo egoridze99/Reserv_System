@@ -5,6 +5,7 @@ from models import *
 
 
 admin = Admin(app, name='seans', template_mode='bootstrap3')
+admin.add_view(ModelView(Cinema, db.session))
 admin.add_view(ModelView(Room, db.session))
 admin.add_view(ModelView(Guest, db.session))
 admin.add_view(ModelView(Reservation, db.session))

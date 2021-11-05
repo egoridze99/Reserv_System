@@ -13,12 +13,13 @@ def get_sum_of_checkouts(checkouts: list) -> int:
     return sum_of_checkouts
 
 
-def count_money(date, income: int, cash: int, card: int, expense: int) -> Money or None:
+def count_money(date, cinema_id: int, income: int, cash: int, card: int, expense: int) -> Money or None:
     """
     Функция проверяет существует ли запись для отведенных дней. \n
     Если есть то проводит калькуяции, если нет, то создает и проводит. \n
     Деньги поступают на счет только после того как статус транзакции становится finished.
     :param date:str -> обязательный параметр
+    :param cinema_id:int -> обязательный параметр
     :param income:int -> Сколько пришло за аренду
     :param cash int -> Сколько из этого налик
     :param card -> Сколько из этого по карте
@@ -26,7 +27,7 @@ def count_money(date, income: int, cash: int, card: int, expense: int) -> Money 
     :return: Money -> объект Money
     """
 
-    money_record = Money.query.filter(Money.date == date).first()
+    money_record = Money.query.filter(Money.date == date).filter(Money.cinema_id == cinema_id).first()
 
     if money_record is None:
         money_record = Money(date=date,
@@ -34,7 +35,8 @@ def count_money(date, income: int, cash: int, card: int, expense: int) -> Money 
                              expense=int(expense),
                              all_by_card=int(card),
                              all_by_cash=int(cash),
-                             proceeds=int(income) - expense)
+                             proceeds=int(income) - expense,
+                             cinema_id=cinema_id)
         money_record.cashier_end = int(money_record.cashier_start) - expense + int(cash)
         try:
             db.session.add(money_record)
@@ -57,14 +59,15 @@ def count_money(date, income: int, cash: int, card: int, expense: int) -> Money 
         return None
 
 
-def get_money_record(date) -> dict:
+def get_money_record(date, cinema_id) -> dict:
     """Возвращает запись из таблицы с указанной датой"""
 
-    money_record = Money.query.filter(Money.date == date).first()
+    money_record = Money.query.filter(Money.date == date).filter(Money.cinema_id == cinema_id).first()
 
     if money_record is not None:
         return {
             "id": money_record.id,
+            "cinema_id": money_record.cinema_id,
             "date": str(money_record.date),
             "income": money_record.income,
             "expense": money_record.expense,

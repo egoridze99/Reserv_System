@@ -11,15 +11,28 @@ class ReservStatusEnum(enum.Enum):
     finished = 'finished'
     canceled = 'canceled'
 
+
 class EmployeeRoleEnum(enum.Enum):
     root = "root"
     admin = "admin"
     operator = "operator"
 
+
+class Cinema(db.Model):
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    name = db.Column(db.String(40), nullable=False)
+    room = db.relationship("Room", backref='cinema')
+    money = db.relationship("Money", backref='money')
+
+    def __str__(self):
+        return "<Кинотеатр id={} адрес={}>".format(self.id, self.name)
+
+
 class Room(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     name = db.Column(db.String(40), nullable=False)
     reservation = db.relationship("Reservation", backref='room')
+    cinema_id = db.Column(db.Integer, db.ForeignKey('cinema.id', name="cinema_id"))
 
     def __str__(self):
         return "<Зал id = {} название = {}>".format(self.id, self.name)
@@ -36,8 +49,8 @@ class Guest(db.Model):
 
 
 checkout_reservaion = db.Table('checkout_reservaion',
-    db.Column('checkout_id', db.Integer, db.ForeignKey('checkout.id'), unique=True),
-    db.Column('reservation_id', db.Integer, db.ForeignKey('reservation.id'))
+    db.Column('checkout_id', db.Integer, db.ForeignKey('checkout.id', name="checkout_id"), unique=True),
+    db.Column('reservation_id', db.Integer, db.ForeignKey('reservation.id', name="reservation_id"))
 )
 
 
@@ -58,15 +71,18 @@ class Money(db.Model):
     cashier_end = db.Column(db.Integer, nullable=False, default=0)
     all_by_card = db.Column(db.Integer, nullable=False, default=0)
     all_by_cash = db.Column(db.Integer, nullable=False, default=0)
+    cinema_id = db.Column(db.Integer, db.ForeignKey('cinema.id', name="cinema_id"))
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         if 'date' in kwargs:
             date = kwargs['date']
+            cinema_id = kwargs['cinema_id']
             previous_day = date - timedelta(days=1)
 
             while True:
-                previous_day_money_object = Money.query.filter(Money.date == str(previous_day)).first()
+                previous_day_money_object = Money.query.filter(Money.cinema_id == cinema_id).filter(
+                    str(previous_day) == Money.date).first()
 
                 if previous_day_money_object is not None:
                     self.cashier_start = previous_day_money_object.cashier_end
@@ -93,8 +109,8 @@ class Reservation(db.Model):
     time = db.Column(db.Time, nullable=False)
     duration = db.Column(db.Integer, nullable=False)
     count = db.Column(db.Integer)  # Кол-во гостей
-    room_id = db.Column(db.Integer, db.ForeignKey('room.id'))
-    guest_id = db.Column(db.Integer, db.ForeignKey('guest.id'))
+    room_id = db.Column(db.Integer, db.ForeignKey('room.id', name="room_id"))
+    guest_id = db.Column(db.Integer, db.ForeignKey('guest.id', name="guest_id"))
     film = db.Column(db.String(170))
     note = db.Column(db.Text)
     author = db.Column(db.String(120))

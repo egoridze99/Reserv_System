@@ -6,7 +6,7 @@ from models import Guest
 import os
 import re
 
-migrate = Migrate(app, db)
+migrate = Migrate(app, db, render_as_batch=True)
 manager = Manager(app)
 manager.add_command('db', MigrateCommand)
 

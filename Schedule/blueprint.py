@@ -11,10 +11,21 @@ from models import *
 schedule = Blueprint('schedule', __name__)
 
 
+@schedule.route('/cinemas')
+@jwt_required
+def get_cinemas():
+    cinemas = Cinema.query.all()
+    cinemas = [{"name": cinema.name, "id": cinema.id} for cinema in cinemas]
+
+    return jsonify(cinemas)
+
+
 @schedule.route('/rooms')
 @jwt_required
 def get_rooms():
-    rooms = Room.query.all()
+    cinema_id = request.args.get("cinema_id")
+
+    rooms = Room.query.filter(Room.cinema_id == cinema_id).all()
     room_names = [room.name for room in rooms]
 
     return jsonify(room_names)
@@ -25,12 +36,13 @@ def get_rooms():
 def get_seans():
     room = request.args.get('room')
     date = request.args.get('date')
+    cinema_id = request.args.get('cinema_id')
 
     if not room or not date:
         return {"message": "Не все данные"}, 400
 
     if room == 'all':
-        seanses = Reservation.query.filter(Reservation.date == date).all()
+        seanses = Reservation.query.join(Room).filter(Reservation.date == date).filter(Room.cinema_id == cinema_id).all()
     else:
         seanses = Reservation.query.join(Room).filter(Room.name == room).filter(Reservation.date == date).all()
 
@@ -120,7 +132,7 @@ def update_seans(id):
     if data['status'] == ReservStatusEnum.finished.name:
         sum_of_checkouts = get_sum_of_checkouts(checkouts)
 
-        money = count_money(date, data['rent'], data['cash'], data['card'], sum_of_checkouts)
+        money = count_money(date, cinema_id, data['rent'], data['cash'], data['card'], sum_of_checkouts)
         if money is None:
             return {"message": "Произошла ошибка. Попробуйте снова"}, 400
 
@@ -199,6 +211,8 @@ def create_seans():
 @jwt_required
 def get_money():
     date = request.args.get("date")
-    money = get_money_record(date)
+    cinema_id = request.args.get("cinema_id")
+
+    money = get_money_record(date, cinema_id)
 
     return money, 200
