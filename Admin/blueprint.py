@@ -255,9 +255,18 @@ def reservs_with_number():
     return jsonify(seanses), 200
 
 @admin.route("/telephones")
+@jwt_required
 def get_telephones():
     phone_pattern = r'[\+]?[78][\-]?[\d]{3}[\-]?[\d]{3}[\-]?[\d]{2}[\-]?[\d]{2}'
     guests = Guest.query.all()
     result = [guest.telephone for guest in guests if re.fullmatch(phone_pattern, guest.telephone)]
 
     return jsonify(result), 200
+
+@admin.route("/logs/<reservation_id>")
+@jwt_required
+def get_logs(reservation_id):
+    logs = UpdateLogs.query.filter(UpdateLogs.reservation_id == reservation_id).all()
+    logs = [log.toJson() for log in logs]
+    logs.sort(key=lambda x: datetime.strptime(x['created_at'], '%d-%m-%Y %H:%M:%S'))
+    return jsonify(logs)

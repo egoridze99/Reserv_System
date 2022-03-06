@@ -82,6 +82,7 @@ def update_seans(id):
     data = json.loads(data)
     role = get_jwt_identity()["role"]
     cinema_id = data["cinema_id"]
+    update_author = get_jwt_identity()["name"]
 
     if EmployeeRoleEnum[role] == EmployeeRoleEnum.operator:
         return {"message": "У вас не хватает прав на это"}, 403
@@ -89,7 +90,6 @@ def update_seans(id):
     seans = Reservation.query.filter(Reservation.id == id).all()
     room = Room.query.filter(Room.name == data['room']).first()
     guest = Guest.query.filter(Guest.telephone == data['guest']['tel']).first()
-    time = datetime.strptime(data['time'], '%H:%M').time()
 
     if guest is None:
         guest = Guest(name=data['guest']['name'], telephone=data['guest']['tel'])
@@ -99,6 +99,8 @@ def update_seans(id):
         return {"message": "Error"}, 400
 
     seans = seans[0]
+    oldCheckouts = seans.checkout
+    print(oldCheckouts)
     checkouts = []
     date = seans.date
 
@@ -137,6 +139,22 @@ def update_seans(id):
         if money is None:
             return {"message": "Произошла ошибка. Попробуйте снова"}, 400
 
+    oldValues = json.dumps({
+        "time": str(seans.time)[:-3],
+        "room": seans.room.name,
+        "duration": seans.duration,
+        "count": seans.count,
+        "film": seans.film,
+        "note": seans.note,
+        "status": seans.status.name,
+        "sum_rent": seans.sum_rent,
+        "card": seans.card,
+        "cash": seans.cash,
+        "guest_name": seans.guest.name,
+        "guest_telephone": seans.guest.telephone,
+        "checkouts": [{"description": item.description, "summ": item.summ} for item in oldCheckouts]
+    })
+
     seans.time = datetime.strptime(data['time'], '%H:%M').time()
     seans.duration = data['duration']
     seans.count = data['count']
@@ -150,9 +168,27 @@ def update_seans(id):
     seans.guest = guest
     seans.checkout = checkouts
 
+    newValues = json.dumps({
+        "time": str(seans.time)[:-3],
+        "room": seans.room.name,
+        "duration": seans.duration,
+        "count": seans.count,
+        "film": seans.film,
+        "note": seans.note,
+        "status": seans.status.name,
+        "sum_rent": seans.sum_rent,
+        "card": seans.card,
+        "cash": seans.cash,
+        "guest_name": seans.guest.name,
+        "guest_telephone": seans.guest.telephone,
+        "checkouts": [{"description": item.description, "summ": item.summ} for item in checkouts]
+    })
+
+    updateLog = UpdateLogs(reservation_id=seans.id, created_at=datetime.today().strftime("%d-%m-%Y %H:%M:%S"), author=update_author, new=newValues, old=oldValues)
 
     try:
         db.session.add(seans)
+        db.session.add(updateLog)
         db.session.commit()
     except builtins.TypeError:
         return {"message": "Непредвиденная ошибка"}, 400
