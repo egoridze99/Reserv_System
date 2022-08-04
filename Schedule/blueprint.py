@@ -100,26 +100,27 @@ def update_seans(id):
 
     seans = seans[0]
     oldCheckouts = seans.checkout
-    print(oldCheckouts)
     checkouts = []
     date = seans.date
 
     if seans.status == ReservStatusEnum.finished \
-            and role != EmployeeRoleEnum.root:
+            and role != EmployeeRoleEnum.root.name:
         return {"message": "Нельзя изменять завершенные сеансы!"}, 400
 
     if data['card'] == 0 \
             and data['cash'] == 0 \
             and data['status'] == ReservStatusEnum.finished.name \
-            and data['rent'] != 0:
+            and data['rent'] != 0 \
+            and role != EmployeeRoleEnum.root.name:
         return {"message": "Клиент не заплатил!"}, 400
 
     if date < datetime.now().date() \
             and data['status'] != ReservStatusEnum.finished.name \
-            and role != EmployeeRoleEnum.root:
+            and role != EmployeeRoleEnum.root.name:
         return {"message": "Вы пытаетесь отредактировать старый сеанс!"}, 400
 
-    if date > datetime.now().date() and data['status'] == ReservStatusEnum.finished.name:
+    if date > datetime.now().date() and data['status'] == ReservStatusEnum.finished.name \
+            and role != EmployeeRoleEnum.root.name:
         return {"message": "Как может завершиться сеанс в будещем?)"}, 400
 
     for check in data['checkouts']:

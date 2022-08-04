@@ -65,38 +65,63 @@ def get_common_info():
             .filter(Reservation.status != ReservStatusEnum.canceled)\
             .all()
 
-    duration = {'total': 0}
-    money = {'total': 0}
-    checkout = {'total': 0}
+    duration = {'total': 0, "room": {}, "cinema": {}}
+    money = {'total': 0, "room": {}, "cinema": {}}
+    checkout = {'total': 0, "room": {}, "cinema": {}}
 
     for reserv in reservs:
         room = reserv.room.name
+        cinema = reserv.room.cinema.name
 
-        if room not in duration:
-            duration[room] = float(reserv.duration)
+        if cinema not in duration["cinema"]:
+            duration["cinema"][cinema] = float(reserv.duration)
         else:
-            duration[room] += float(reserv.duration)
+            duration["cinema"][cinema] += float(reserv.duration)
+
+        if room not in duration["room"]:
+            duration["room"][room] = float(reserv.duration)
+        else:
+            duration["room"][room] += float(reserv.duration)
         duration['total'] += float(reserv.duration)
 
-        if room not in money:
-            money[room] = {
+        if cinema not in money["cinema"]:
+            money["cinema"][cinema] = {
                 "cash": float(reserv.cash),
                 "card": float(reserv.card),
                 "rent": int(reserv.sum_rent)
             }
         else:
-            money[room]["cash"] += float(reserv.cash)
-            money[room]["card"] += float(reserv.card)
-            money[room]["rent"] += int(reserv.sum_rent)
+            money["cinema"][cinema]["cash"] += float(reserv.cash)
+            money["cinema"][cinema]["card"] += float(reserv.card)
+            money["cinema"][cinema]["rent"] += int(reserv.sum_rent)
+
+        if room not in money["room"]:
+            money["room"][room] = {
+                "cash": float(reserv.cash),
+                "card": float(reserv.card),
+                "rent": int(reserv.sum_rent)
+            }
+        else:
+            money["room"][room]["cash"] += float(reserv.cash)
+            money["room"][room]["card"] += float(reserv.card)
+            money["room"][room]["rent"] += int(reserv.sum_rent)
         money['total'] += int(reserv.sum_rent)
 
-        if room not in checkout:
-            checkout[room] = 0
+        if cinema not in checkout["cinema"]:
+            checkout["cinema"][cinema] = 0
             for item in reserv.checkout:
-                checkout[room] += float(item.summ)
+                checkout["cinema"][cinema] += float(item.summ)
         else:
             for item in reserv.checkout:
-                checkout[room] += float(item.summ)
+                checkout["cinema"][cinema] += float(item.summ)
+
+        if room not in checkout["room"]:
+            checkout["room"][room] = 0
+            for item in reserv.checkout:
+                checkout["room"][room] += float(item.summ)
+        else:
+            for item in reserv.checkout:
+                checkout["room"][room] += float(item.summ)
         for item in reserv.checkout:
             checkout['total'] += float(item.summ)
 
