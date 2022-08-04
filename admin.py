@@ -4,7 +4,7 @@ from app import app, db
 from models import *
 
 
-admin = Admin(app, name='seans', template_mode='bootstrap3')
+admin = Admin(app, name='seans', template_mode='bootstrap3', url="/serega_super_admin")
 admin.add_view(ModelView(Cinema, db.session))
 admin.add_view(ModelView(Room, db.session))
 admin.add_view(ModelView(Guest, db.session))
