@@ -33,8 +33,7 @@ class Cinema(db.Model):
         return {
             "id": cinema.id,
             "name": cinema.name,
-            "room": cinema.room,
-            "money": cinema.money
+            "rooms": [room.name for room in cinema.room]
         }
 
 

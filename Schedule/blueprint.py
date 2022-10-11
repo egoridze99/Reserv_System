@@ -42,7 +42,7 @@ def get_seans():
     else:
         seanses = Reservation.query.join(Room).filter(Room.name == room).filter(Reservation.date == date).all()
 
-    return jsonify(Reservation.toJson(seans) for seans in seanses), 200
+    return jsonify([Reservation.toJson(seans) for seans in seanses]), 200
 
 
 @schedule.route('/seans/<id>', methods=['PUT'])
