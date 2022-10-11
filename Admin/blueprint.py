@@ -22,7 +22,7 @@ def index():
     if not password:
         return jsonify({"msg": "Не введен пароль"}), 400
 
-    user = AdminUser.query.filter(AdminUser.login == login).first()
+    user = User.query.filter(User.login == login).first()
 
     if not user:
         return jsonify({"msg": "Неверный логин"}), 400
@@ -194,7 +194,7 @@ def new_user():
     surname = request.json.get("surname")
     role = request.json.get("role")
 
-    user = AdminUser.query.filter(AdminUser.login == login).first()
+    user = User.query.filter(User.login == login).first()
 
     if not login:
         return {"msg": "Логин пустой"}, 400
@@ -212,7 +212,7 @@ def new_user():
         return {"msg": "Такой пользователь уже есть"}, 400
 
     password = hashlib.md5(password.encode()).hexdigest()
-    user = AdminUser(login=login, password=password, name=name, surname=surname, role=EmployeeRoleEnum[role].value)
+    user = User(login=login, password=password, name=name, surname=surname, role=EmployeeRoleEnum[role].value)
 
     db.session.add(user)
     try:

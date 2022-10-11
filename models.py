@@ -58,7 +58,7 @@ class Guest(db.Model):
         return "<Гость id = {} Имя = {} Номер = {}>".format(self.id, self.name, self.telephone)
 
 
-checkout_reservaion = db.Table('checkout_reservaion',
+checkout_reservation = db.Table('checkout_reservation',
     db.Column('checkout_id', db.Integer, db.ForeignKey('checkout.id', name="checkout_id"), unique=True),
     db.Column('reservation_id', db.Integer, db.ForeignKey('reservation.id', name="reservation_id"))
 )
@@ -68,7 +68,7 @@ class Checkout(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     summ = db.Column(db.Integer, nullable=False)
     description = db.Column(db.String(500), nullable=False)
-    reservation = db.relationship('Reservation', secondary=checkout_reservaion)
+    reservation = db.relationship('Reservation', secondary=checkout_reservation)
 
     @staticmethod
     def toJson(checkout: 'Checkout'):
@@ -133,7 +133,7 @@ class Reservation(db.Model):
     film = db.Column(db.String(170))
     note = db.Column(db.Text)
     author = db.Column(db.String(120))
-    checkout = db.relationship('Checkout', secondary=checkout_reservaion)
+    checkout = db.relationship('Checkout', secondary=checkout_reservation)
     created_at = db.Column(db.String(10))
 
     status = db.Column(db.Enum(ReservationStatusEnum), default=ReservationStatusEnum.not_allowed, nullable=False)
@@ -184,7 +184,7 @@ class Reservation(db.Model):
                    self.cash)
 
 
-class AdminUser(db.Model):
+class User(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     login = db.Column(db.String(40), nullable=False)
     password = db.Column(db.String(200), nullable=False)
