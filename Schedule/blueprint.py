@@ -7,6 +7,7 @@ from datetime import datetime
 from Schedule.utils import count_money, get_sum_of_checkouts, get_money_record, is_date_in_last, check_the_taking
 from app import db
 from models import *
+from utils.parse_json import parse_json
 
 schedule = Blueprint('schedule', __name__)
 
@@ -15,20 +16,15 @@ schedule = Blueprint('schedule', __name__)
 @jwt_required
 def get_cinemas():
     cinemas = Cinema.query.all()
-    cinemas = [{"name": cinema.name, "id": cinema.id} for cinema in cinemas]
-
-    return jsonify(cinemas)
+    return jsonify([Cinema.toJson(cinema) for cinema in cinemas])
 
 
 @schedule.route('/rooms')
 @jwt_required
 def get_rooms():
     cinema_id = request.args.get("cinema_id")
-
     rooms = Room.query.filter(Room.cinema_id == cinema_id).all()
-    room_names = [room.name for room in rooms]
-
-    return jsonify(room_names)
+    return jsonify([room.name for room in rooms])
 
 
 @schedule.route('/seans')
@@ -46,40 +42,13 @@ def get_seans():
     else:
         seanses = Reservation.query.join(Room).filter(Room.name == room).filter(Reservation.date == date).all()
 
-    seanses = [{
-        'id': seans.id,
-        'date': seans.date,
-        'room': seans.room.name,
-        'time': str(seans.time)[:-3],
-        'duration': seans.duration,
-        'count': seans.count,
-        'film': seans.film,
-        'name': seans.author,
-        'note': seans.note,
-        'status': seans.status.name,
-        'card': seans.card,
-        'cash': seans.cash,
-        'rent': seans.sum_rent,
-        'created_at': seans.created_at,
-        'guest': {
-            "name": seans.guest.name,
-            "tel": seans.guest.telephone
-        },
-        'checkout': [{
-            'id': checkout.id,
-            'summ': checkout.summ,
-            'note': checkout.description,
-        } for checkout in seans.checkout]
-    } for seans in seanses]
-
-    return jsonify(seanses), 200
+    return jsonify(Reservation.toJson(seans) for seans in seanses), 200
 
 
 @schedule.route('/seans/<id>', methods=['PUT'])
 @jwt_required
 def update_seans(id):
-    data = request.data
-    data = json.loads(data)
+    data = parse_json(request.data)
     role = get_jwt_identity()["role"]
     cinema_id = data["cinema_id"]
     update_author = get_jwt_identity()["name"]
@@ -103,23 +72,23 @@ def update_seans(id):
     checkouts = []
     date = seans.date
 
-    if seans.status == ReservStatusEnum.finished \
+    if seans.status == ReservationStatusEnum.finished \
             and role != EmployeeRoleEnum.root.name:
         return {"message": "Нельзя изменять завершенные сеансы!"}, 400
 
     if data['card'] == 0 \
             and data['cash'] == 0 \
-            and data['status'] == ReservStatusEnum.finished.name \
+            and data['status'] == ReservationStatusEnum.finished.name \
             and data['rent'] != 0 \
             and role != EmployeeRoleEnum.root.name:
         return {"message": "Клиент не заплатил!"}, 400
 
     if date < datetime.now().date() \
-            and data['status'] != ReservStatusEnum.finished.name \
+            and data['status'] != ReservationStatusEnum.finished.name \
             and role != EmployeeRoleEnum.root.name:
         return {"message": "Вы пытаетесь отредактировать старый сеанс!"}, 400
 
-    if date > datetime.now().date() and data['status'] == ReservStatusEnum.finished.name \
+    if date > datetime.now().date() and data['status'] == ReservationStatusEnum.finished.name \
             and role != EmployeeRoleEnum.root.name:
         return {"message": "Как может завершиться сеанс в будещем?)"}, 400
 
@@ -133,7 +102,7 @@ def update_seans(id):
             new_check = Checkout(summ=check['summ'], description=check['note'])
             checkouts.append(new_check)
 
-    if data['status'] == ReservStatusEnum.finished.name:
+    if data['status'] == ReservationStatusEnum.finished.name:
         sum_of_checkouts = get_sum_of_checkouts(checkouts)
 
         money = count_money(date, cinema_id, data['rent'], data['cash'], data['card'], sum_of_checkouts)
@@ -161,7 +130,7 @@ def update_seans(id):
     seans.count = data['count']
     seans.film = data['film']
     seans.note = data['note']
-    seans.status = ReservStatusEnum[data['status']]
+    seans.status = ReservationStatusEnum[data['status']]
     seans.sum_rent = data['rent']
     seans.card = data['card']
     seans.cash = data['cash']
@@ -200,8 +169,7 @@ def update_seans(id):
 @schedule.route('/seans', methods=['POST'])
 @jwt_required
 def create_seans():
-    data = request.data
-    data = json.loads(data)
+    data = parse_json(request.data)
     name = get_jwt_identity()["name"]
     role = get_jwt_identity()["role"]
 

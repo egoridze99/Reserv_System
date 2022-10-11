@@ -99,7 +99,7 @@ def check_the_taking(date, room, time, duration):
     new_reserv_end_time = (dt.datetime.combine(dt.date(1, 1, 1), time) + new_delta).time()
 
     for reserv in reservs:
-        if reserv.status == ReservStatusEnum.canceled:
+        if reserv.status == ReservationStatusEnum.canceled:
             continue
 
         reserv_start_time = reserv.time

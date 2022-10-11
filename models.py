@@ -5,7 +5,7 @@ from app import db
 import enum
 
 
-class ReservStatusEnum(enum.Enum):
+class ReservationStatusEnum(enum.Enum):
     not_allowed = "not_allowed"
     progress = 'progress'
     waiting = 'waiting'
@@ -27,6 +27,15 @@ class Cinema(db.Model):
 
     def __str__(self):
         return "<Кинотеатр id={} адрес={}>".format(self.id, self.name)
+
+    @staticmethod
+    def toJson(cinema: 'Cinema') -> dict:
+        return {
+            "id": cinema.id,
+            "name": cinema.name,
+            "room": cinema.room,
+            "money": cinema.money
+        }
 
 
 class Room(db.Model):
@@ -60,6 +69,15 @@ class Checkout(db.Model):
     summ = db.Column(db.Integer, nullable=False)
     description = db.Column(db.String(500), nullable=False)
     reservation = db.relationship('Reservation', secondary=checkout_reservaion)
+
+    @staticmethod
+    def toJson(checkout: 'Checkout'):
+        return {
+            "id": checkout.id,
+            "summ": checkout.summ,
+            "note": checkout.description
+        }
+
 
 
 class Money(db.Model):
@@ -118,11 +136,35 @@ class Reservation(db.Model):
     checkout = db.relationship('Checkout', secondary=checkout_reservaion)
     created_at = db.Column(db.String(10))
 
-    status = db.Column(db.Enum(ReservStatusEnum), default=ReservStatusEnum.not_allowed, nullable=False)
+    status = db.Column(db.Enum(ReservationStatusEnum), default=ReservationStatusEnum.not_allowed, nullable=False)
 
     sum_rent = db.Column(db.Integer, default=0)
     card = db.Column(db.Integer, default=0)
     cash = db.Column(db.Integer, default=0)
+
+    @staticmethod
+    def toJson(reservation: 'Reservation'):
+        return {
+            'id': reservation.id,
+            'date': reservation.date,
+            'room': reservation.room.name,
+            'time': str(reservation.time)[:-3],
+            'duration': reservation.duration,
+            'count': reservation.count,
+            'film': reservation.film,
+            'name': reservation.author,
+            'note': reservation.note,
+            'status': reservation.status.name,
+            'card': reservation.card,
+            'cash': reservation.cash,
+            'rent': reservation.sum_rent,
+            'created_at': reservation.created_at,
+            'guest': {
+                "name": reservation.guest.name,
+                "tel": reservation.guest.telephone
+            },
+            'checkout': [Checkout.toJson(checkout) for checkout in reservation.checkout]
+        }
 
     def __str__(self):
         return """

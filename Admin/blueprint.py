@@ -56,13 +56,13 @@ def get_common_info():
     if untill == till:
         reservs = Reservation.query\
             .filter(Reservation.date == till)\
-            .filter(Reservation.status != ReservStatusEnum.canceled)\
+            .filter(Reservation.status != ReservationStatusEnum.canceled)\
             .all()
     else:
         reservs = Reservation.query\
             .filter(Reservation.date >= untill)\
             .filter(Reservation.date <= till) \
-            .filter(Reservation.status != ReservStatusEnum.canceled)\
+            .filter(Reservation.status != ReservationStatusEnum.canceled)\
             .all()
 
     duration = {'total': 0, "room": {}, "cinema": {}}
@@ -151,54 +151,30 @@ def get_canceled():
         if untill == till:
             seanses = Reservation.query\
                 .filter(Reservation.date == till)\
-                .filter(Reservation.status == ReservStatusEnum.canceled)\
+                .filter(Reservation.status == ReservationStatusEnum.canceled)\
                 .all()
         else:
             seanses = Reservation.query\
                 .filter(Reservation.date >= untill)\
                 .filter(Reservation.date <= till) \
-                .filter(Reservation.status == ReservStatusEnum.canceled)\
+                .filter(Reservation.status == ReservationStatusEnum.canceled)\
                 .all()
     else:
         if untill == till:
             seanses = Reservation.query\
                 .filter(Reservation.date == till)\
-                .filter(Reservation.status != ReservStatusEnum.canceled) \
-                .filter(Reservation.status != ReservStatusEnum.finished) \
+                .filter(Reservation.status != ReservationStatusEnum.canceled) \
+                .filter(Reservation.status != ReservationStatusEnum.finished) \
                 .all()
         else:
             seanses = Reservation.query\
                 .filter(Reservation.date >= untill)\
                 .filter(Reservation.date <= till) \
-                .filter(Reservation.status != ReservStatusEnum.canceled) \
-                .filter(Reservation.status != ReservStatusEnum.finished) \
+                .filter(Reservation.status != ReservationStatusEnum.canceled) \
+                .filter(Reservation.status != ReservationStatusEnum.finished) \
                 .all()
 
-    seanses = [{
-        'id': seans.id,
-        'date': seans.date,
-        'time': str(seans.time)[:-3],
-        'duration': seans.duration,
-        'count': seans.count,
-        'film': seans.film,
-        'note': seans.note,
-        'name': seans.author,
-        'room': seans.room.name,
-        'status': seans.status.name,
-        'card': seans.card,
-        'cash': seans.cash,
-        'rent': seans.sum_rent,
-        'created_at': seans.created_at,
-        'guest': {
-            "name": seans.guest.name,
-            "tel": seans.guest.telephone
-        },
-        'checkout': [{
-            'id': checkout.id,
-            'summ': checkout.summ,
-            'note': checkout.description,
-        } for checkout in seans.checkout]
-    } for seans in seanses]
+    seanses = [Reservation.toJson(seans) for seans in seanses]
 
     return jsonify(seanses), 200
 
@@ -251,31 +227,7 @@ def new_user():
 def reservs_with_number():
     telephone = request.args.get("telephone")
     seanses = Reservation.query.join(Guest).filter(Guest.telephone == telephone).all()
-    seanses = [{
-        'id': seans.id,
-        'date': seans.date,
-        'room': seans.room.name,
-        'time': str(seans.time)[:-3],
-        'duration': seans.duration,
-        'count': seans.count,
-        'film': seans.film,
-        'note': seans.note,
-        'status': seans.status.name,
-        'card': seans.card,
-        'cash': seans.cash,
-        'rent': seans.sum_rent,
-        'created_at': seans.created_at,
-        'guest': {
-            "name": seans.guest.name,
-            "tel": seans.guest.telephone
-        },
-        'name': seans.author,
-        'checkout': [{
-            'id': checkout.id,
-            'summ': checkout.summ,
-            'note': checkout.description,
-        } for checkout in seans.checkout]
-    } for seans in seanses]
+    seanses = [Reservation.toJson(seans) for seans in seanses]
 
     return jsonify(seanses), 200
 
