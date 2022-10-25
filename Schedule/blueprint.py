@@ -4,7 +4,8 @@ import json
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from datetime import datetime
-from Schedule.utils import count_money, get_sum_of_checkouts, get_money_record, is_date_in_last, check_the_taking
+from Schedule.utils import count_money, get_sum_of_checkouts, get_money_record, is_date_in_last, check_the_taking, \
+    check_not_payment
 from app import db
 from models import *
 from utils.parse_json import parse_json
@@ -68,7 +69,7 @@ def update_seans(id):
         return {"message": "Error"}, 400
 
     seans = seans[0]
-    oldCheckouts = seans.checkout
+    old_checkouts = seans.checkout
     checkouts = []
     date = seans.date
 
@@ -76,11 +77,7 @@ def update_seans(id):
             and role != EmployeeRoleEnum.root.name:
         return {"message": "Нельзя изменять завершенные сеансы!"}, 400
 
-    if data['card'] == 0 \
-            and data['cash'] == 0 \
-            and data['status'] == ReservationStatusEnum.finished.name \
-            and data['rent'] != 0 \
-            and role != EmployeeRoleEnum.root.name:
+    if check_not_payment(role, data):
         return {"message": "Клиент не заплатил!"}, 400
 
     if date < datetime.now().date() \
@@ -95,11 +92,11 @@ def update_seans(id):
     for check in data['checkouts']:
         if 'new' not in check:
             new_check = Checkout.query.filter(Checkout.id == check['id']).first()
-            new_check.summ = check['summ']
+            new_check.sum = check['sum']
             new_check.description = check['note']
             checkouts.append(new_check)
         else:
-            new_check = Checkout(summ=check['summ'], description=check['note'])
+            new_check = Checkout(sum=check['sum'], description=check['note'])
             checkouts.append(new_check)
 
     if data['status'] == ReservationStatusEnum.finished.name:
@@ -122,7 +119,7 @@ def update_seans(id):
         "cash": seans.cash,
         "guest_name": seans.guest.name,
         "guest_telephone": seans.guest.telephone,
-        "checkouts": [{"description": item.description, "summ": item.summ} for item in oldCheckouts]
+        "checkouts": [{"description": item.description, "sum": item.sum} for item in old_checkouts]
     })
 
     seans.time = datetime.strptime(data['time'], '%H:%M').time()
@@ -151,7 +148,7 @@ def update_seans(id):
         "cash": seans.cash,
         "guest_name": seans.guest.name,
         "guest_telephone": seans.guest.telephone,
-        "checkouts": [{"description": item.description, "summ": item.summ} for item in checkouts]
+        "checkouts": [{"description": item.description, "sum": item.sum} for item in checkouts]
     })
 
     updateLog = UpdateLogs(reservation_id=seans.id, created_at=datetime.today().strftime("%d-%m-%Y %H:%M:%S"), author=update_author, new=newValues, old=oldValues)
@@ -163,7 +160,7 @@ def update_seans(id):
     except builtins.TypeError:
         return {"message": "Непредвиденная ошибка"}, 400
 
-    return {"message": "ok"}, 200
+    return Reservation.toJson(seans), 200
 
 
 @schedule.route('/seans', methods=['POST'])
@@ -208,7 +205,7 @@ def create_seans():
     db.session.add(reserv)
     try:
         db.session.commit()
-        return {"message": "ok"}, 200
+        return Reservation.toJson(reserv), 200
     except Exception:
         return {"msg": "error"}, 400
 

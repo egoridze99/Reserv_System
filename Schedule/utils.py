@@ -1,7 +1,16 @@
 import builtins
 import datetime as dt
+from collections import namedtuple
 
 from models import *
+
+
+def check_not_payment(role: EmployeeRoleEnum, data):
+    return data['card'] == 0 \
+            and data['cash'] == 0 \
+            and data['status'] == ReservationStatusEnum.finished.name \
+            and data['rent'] != 0 \
+            and role != EmployeeRoleEnum.root.name
 
 
 def get_sum_of_checkouts(checkouts: list) -> int:

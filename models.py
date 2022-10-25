@@ -65,7 +65,7 @@ checkout_reservation = db.Table('checkout_reservation',
 
 class Checkout(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    summ = db.Column(db.Integer, nullable=False)
+    sum = db.Column(db.Integer, nullable=True)
     description = db.Column(db.String(500), nullable=False)
     reservation = db.relationship('Reservation', secondary=checkout_reservation)
 
@@ -73,7 +73,7 @@ class Checkout(db.Model):
     def toJson(checkout: 'Checkout'):
         return {
             "id": checkout.id,
-            "summ": checkout.summ,
+            "sum": checkout.sum,
             "note": checkout.description
         }
 
@@ -151,7 +151,7 @@ class Reservation(db.Model):
             'duration': reservation.duration,
             'count': reservation.count,
             'film': reservation.film,
-            'name': reservation.author,
+            'author': reservation.author,
             'note': reservation.note,
             'status': reservation.status.name,
             'card': reservation.card,

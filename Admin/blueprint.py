@@ -38,7 +38,7 @@ def index():
         "name": f"{user.name} {user.surname}"
     }, expires_delta=timedelta(hours=6))
 
-    return jsonify({"token": "Bearer " + jwt, "role": user.role.value, "name": f"{user.name} {user.surname}"}), 200
+    return {"jwt": jwt}, 200
 
 
 @admin.route("/common")
@@ -110,20 +110,20 @@ def get_common_info():
         if cinema not in checkout["cinema"]:
             checkout["cinema"][cinema] = 0
             for item in reserv.checkout:
-                checkout["cinema"][cinema] += float(item.summ)
+                checkout["cinema"][cinema] += float(item.sum)
         else:
             for item in reserv.checkout:
-                checkout["cinema"][cinema] += float(item.summ)
+                checkout["cinema"][cinema] += float(item.sum)
 
         if room not in checkout["room"]:
             checkout["room"][room] = 0
             for item in reserv.checkout:
-                checkout["room"][room] += float(item.summ)
+                checkout["room"][room] += float(item.sum)
         else:
             for item in reserv.checkout:
-                checkout["room"][room] += float(item.summ)
+                checkout["room"][room] += float(item.sum)
         for item in reserv.checkout:
-            checkout['total'] += float(item.summ)
+            checkout['total'] += float(item.sum)
 
     res = {
         "duration": duration,
