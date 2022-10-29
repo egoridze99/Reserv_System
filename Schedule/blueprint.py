@@ -20,28 +20,20 @@ def get_cinemas():
     return jsonify([Cinema.toJson(cinema) for cinema in cinemas])
 
 
-@schedule.route('/rooms')
-@jwt_required
-def get_rooms():
-    cinema_id = request.args.get("cinema_id")
-    rooms = Room.query.filter(Room.cinema_id == cinema_id).all()
-    return jsonify([room.name for room in rooms])
-
-
 @schedule.route('/seans')
 @jwt_required
 def get_seans():
-    room = request.args.get('room')
+    room: 'Room' = json.loads(request.args.get('room'))
     date = request.args.get('date')
     cinema_id = request.args.get('cinema_id')
 
     if not room or not date:
         return {"message": "Не все данные"}, 400
 
-    if room == 'all':
+    if room["id"] == -1:
         seanses = Reservation.query.join(Room).filter(Reservation.date == date).filter(Room.cinema_id == cinema_id).all()
     else:
-        seanses = Reservation.query.join(Room).filter(Room.name == room).filter(Reservation.date == date).all()
+        seanses = Reservation.query.join(Room).filter(Room.id == room["id"]).filter(Reservation.date == date).all()
 
     return jsonify([Reservation.toJson(seans) for seans in seanses]), 200
 
@@ -58,7 +50,7 @@ def update_seans(id):
         return {"message": "У вас не хватает прав на это"}, 403
 
     seans = Reservation.query.filter(Reservation.id == id).all()
-    room = Room.query.filter(Room.name == data['room']).first()
+    room = Room.query.filter(Room.id == data['room']['id']).first()
     guest = Guest.query.filter(Guest.telephone == data['guest']['tel']).first()
 
     if guest is None:
@@ -72,6 +64,9 @@ def update_seans(id):
     old_checkouts = seans.checkout
     checkouts = []
     date = seans.date
+
+    new_date = datetime.strptime(data['date'], '%Y-%m-%d').date()
+    new_time = datetime.strptime(data['time'], '%H:%M').time()
 
     if seans.status == ReservationStatusEnum.finished \
             and role != EmployeeRoleEnum.root.name:
@@ -89,8 +84,11 @@ def update_seans(id):
             and role != EmployeeRoleEnum.root.name:
         return {"message": "Как может завершиться сеанс в будещем?)"}, 400
 
+    if check_the_taking(new_date, room, new_time, float(data['duration'])):
+        return {"msg": "Зал занят"}, 400
+
     for check in data['checkouts']:
-        if 'new' not in check:
+        if 'id' in check:
             new_check = Checkout.query.filter(Checkout.id == check['id']).first()
             new_check.sum = check['sum']
             new_check.description = check['note']
@@ -122,7 +120,8 @@ def update_seans(id):
         "checkouts": [{"description": item.description, "sum": item.sum} for item in old_checkouts]
     })
 
-    seans.time = datetime.strptime(data['time'], '%H:%M').time()
+    seans.date = new_date
+    seans.time = new_time
     seans.duration = data['duration']
     seans.count = data['count']
     seans.film = data['film']
@@ -173,7 +172,7 @@ def create_seans():
     if EmployeeRoleEnum[role] == EmployeeRoleEnum.operator:
         return {"message": "У вас не хватает прав на это"}, 403
 
-    room = Room.query.filter(Room.name == data['room']).first()
+    room = Room.query.filter(Room.id == data['room']['id']).first()
     guest = Guest.query.filter(Guest.telephone == data['guest']['tel']).first()
 
     if guest is None:

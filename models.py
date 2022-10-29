@@ -33,7 +33,7 @@ class Cinema(db.Model):
         return {
             "id": cinema.id,
             "name": cinema.name,
-            "rooms": [room.name for room in cinema.room]
+            "rooms": [{"id": room.id, "name": room.name} for room in cinema.room]
         }
 
 
@@ -146,7 +146,7 @@ class Reservation(db.Model):
         return {
             'id': reservation.id,
             'date': reservation.date,
-            'room': reservation.room.name,
+            'room': {"id": reservation.room.id, "name": reservation.room.name},
             'time': str(reservation.time)[:-3],
             'duration': reservation.duration,
             'count': reservation.count,
@@ -162,7 +162,7 @@ class Reservation(db.Model):
                 "name": reservation.guest.name,
                 "tel": reservation.guest.telephone
             },
-            'checkout': [Checkout.toJson(checkout) for checkout in reservation.checkout]
+            'checkouts': [Checkout.toJson(checkout) for checkout in reservation.checkout]
         }
 
     def __str__(self):

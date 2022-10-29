@@ -74,9 +74,11 @@ def get_money_record(date, cinema_id) -> dict:
     money_record = Money.query.filter(Money.date == date).filter(Money.cinema_id == cinema_id).first()
 
     if money_record is not None:
+        cinema = Cinema.query.filter(Cinema.id == money_record.cinema_id).first()
+
         return {
             "id": money_record.id,
-            "cinema_id": money_record.cinema_id,
+            "cinema": Cinema.toJson(cinema),
             "date": str(money_record.date),
             "income": money_record.income,
             "expense": money_record.expense,
