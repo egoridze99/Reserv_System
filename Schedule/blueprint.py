@@ -37,6 +37,44 @@ def get_seans():
 
     return jsonify([Reservation.toJson(seans) for seans in seanses]), 200
 
+@schedule.route('/seans/search')
+@jwt_required
+def search_reservations():
+    statuses: list[ReservationStatusEnum] = request.args.get('status')
+    rooms: list[Room] = request.args.get('room')
+    ids: list[str] = request.args.get('ids')
+    telephones: list[str] = request.args.get('telephones')
+    start_date: str = request.args.get('date_from')
+    end_date: str = request.args.get('date_to')
+
+    reservation_query = Reservation.query.join(Room).join(Guest)
+
+    if statuses:
+        statuses = [ReservationStatusEnum[status] for status in json.loads(statuses)]
+        reservation_query = reservation_query.filter(Reservation.status.in_(statuses))
+
+    if rooms:
+        rooms_id = [room["id"] for room in json.loads(rooms)]
+        reservation_query = reservation_query.filter(Reservation.room_id.in_(rooms_id))
+
+    if ids:
+        ids = json.loads(ids)
+        reservation_query = reservation_query.filter(Reservation.id.in_(ids))
+
+    if telephones:
+        telephones = json.loads(telephones)
+        reservation_query = reservation_query.filter(Guest.telephone.in_(telephones))
+
+    if start_date:
+        reservation_query = reservation_query.filter(Reservation.date >= start_date)
+
+    if end_date:
+        reservation_query = reservation_query.filter(Reservation.date <= end_date)
+
+    reservations = reservation_query.all()
+
+    return jsonify([Reservation.toJson(reservation) for reservation in reservations]), 200
+
 
 @schedule.route('/seans/<id>', methods=['PUT'])
 @jwt_required
