@@ -122,7 +122,7 @@ def update_seans(id):
             and role != EmployeeRoleEnum.root.name:
         return {"message": "Как может завершиться сеанс в будещем?)"}, 400
 
-    if check_the_taking(new_date, room, new_time, float(data['duration'])):
+    if check_the_taking(new_date, room, new_time, float(data['duration']), id):
         return {"msg": "Зал занят"}, 400
 
     for check in data['checkouts']:

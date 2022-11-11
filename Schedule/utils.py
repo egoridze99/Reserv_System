@@ -97,7 +97,7 @@ def is_date_in_last(date):
     return now > date
 
 
-def check_the_taking(date, room, time, duration):
+def check_the_taking(date, room, time, duration, id=None):
     """Проверяет занят ли зал"""
 
     reservs = Reservation\
@@ -113,17 +113,26 @@ def check_the_taking(date, room, time, duration):
         if reserv.status == ReservationStatusEnum.canceled:
             continue
 
+        if id is not None and reserv.id == int(id):
+            continue
+
         reserv_start_time = reserv.time
         delta = timedelta(hours=reserv.duration)
         reserv_end_time = (dt.datetime.combine(dt.date(1, 1, 1), reserv_start_time) + delta).time()
 
         if time == reserv_start_time:
+            print(id)
+            print(reserv)
             return True
 
         if time < reserv_start_time <= new_reserv_end_time:
+            print(id)
+            print(reserv)
             return True
 
         if reserv_start_time < time <= reserv_end_time:
+            print(id)
+            print(reserv)
             return True
 
     return False

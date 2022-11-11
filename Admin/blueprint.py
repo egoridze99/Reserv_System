@@ -133,52 +133,6 @@ def get_common_info():
 
     return jsonify(res), 200
 
-
-@admin.route("/statused")
-@jwt_required
-def get_canceled():
-    identity = get_jwt_identity()
-    role = identity["role"]
-
-    if EmployeeRoleEnum[role] != EmployeeRoleEnum.root:
-        return {"message": "Недостаточно прав"}, 403
-
-    untill = request.args.get('untill')
-    till = request.args.get('till')
-    mode = request.args.get('mode')
-
-    if mode == 'canceled':
-        if untill == till:
-            seanses = Reservation.query\
-                .filter(Reservation.date == till)\
-                .filter(Reservation.status == ReservationStatusEnum.canceled)\
-                .all()
-        else:
-            seanses = Reservation.query\
-                .filter(Reservation.date >= untill)\
-                .filter(Reservation.date <= till) \
-                .filter(Reservation.status == ReservationStatusEnum.canceled)\
-                .all()
-    else:
-        if untill == till:
-            seanses = Reservation.query\
-                .filter(Reservation.date == till)\
-                .filter(Reservation.status != ReservationStatusEnum.canceled) \
-                .filter(Reservation.status != ReservationStatusEnum.finished) \
-                .all()
-        else:
-            seanses = Reservation.query\
-                .filter(Reservation.date >= untill)\
-                .filter(Reservation.date <= till) \
-                .filter(Reservation.status != ReservationStatusEnum.canceled) \
-                .filter(Reservation.status != ReservationStatusEnum.finished) \
-                .all()
-
-    seanses = [Reservation.toJson(seans) for seans in seanses]
-
-    return jsonify(seanses), 200
-
-
 @admin.route("/new_user", methods=["POST"])
 @jwt_required
 def new_user():
@@ -222,15 +176,6 @@ def new_user():
         return {"message": "error"}, 400
 
 
-@admin.route("/reservs", methods=["GET"])
-@jwt_required
-def reservs_with_number():
-    telephone = request.args.get("telephone")
-    seanses = Reservation.query.join(Guest).filter(Guest.telephone == telephone).all()
-    seanses = [Reservation.toJson(seans) for seans in seanses]
-
-    return jsonify(seanses), 200
-
 @admin.route("/telephones")
 @jwt_required
 def get_telephones():
@@ -238,7 +183,7 @@ def get_telephones():
     guests = Guest.query.all()
     result = [guest.telephone for guest in guests if re.fullmatch(phone_pattern, guest.telephone)]
 
-    return jsonify(result), 200
+    return jsonify({'data': result}), 200
 
 @admin.route("/logs/<reservation_id>")
 @jwt_required
