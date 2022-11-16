@@ -2,9 +2,13 @@ import hashlib
 import re
 
 from flask import Blueprint, jsonify, request
-from flask_jwt_extended import create_access_token, jwt_required, get_jwt_claims, get_jwt_identity
+from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
 
+from Admin.queries import get_checkout_query, get_duration_query, get_money_query
 from models import *
+
+from app import db
+from utils.sa_query_result_to_dict import sa_query_result_to_dict
 
 admin = Blueprint('myadmin', __name__)
 
@@ -16,6 +20,8 @@ def index():
 
     login = request.json.get('login', None)
     password = request.json.get('password', None)
+
+    print(request.json.get('login', None))
 
     if not login:
         return jsonify({"msg": "Не введен логин"}), 400
@@ -52,86 +58,14 @@ def get_common_info():
 
     untill = request.args.get('untill')
     till = request.args.get('till')
+    area = request.args.get('area')
 
-    if untill == till:
-        reservs = Reservation.query\
-            .filter(Reservation.date == till)\
-            .filter(Reservation.status != ReservationStatusEnum.canceled)\
-            .all()
-    else:
-        reservs = Reservation.query\
-            .filter(Reservation.date >= untill)\
-            .filter(Reservation.date <= till) \
-            .filter(Reservation.status != ReservationStatusEnum.canceled)\
-            .all()
+    return jsonify({
+        "duration": sa_query_result_to_dict(db.session.execute(get_duration_query(area, untill, till))),
+        "money": sa_query_result_to_dict(db.session.execute(get_money_query(area, untill, till))),
+        "checkout": sa_query_result_to_dict(db.session.execute(get_checkout_query(area, untill, till)))
+    }), 200
 
-    duration = {'total': 0, "room": {}, "cinema": {}}
-    money = {'total': 0, "room": {}, "cinema": {}}
-    checkout = {'total': 0, "room": {}, "cinema": {}}
-
-    for reserv in reservs:
-        room = reserv.room.name
-        cinema = reserv.room.cinema.name
-
-        if cinema not in duration["cinema"]:
-            duration["cinema"][cinema] = float(reserv.duration)
-        else:
-            duration["cinema"][cinema] += float(reserv.duration)
-
-        if room not in duration["room"]:
-            duration["room"][room] = float(reserv.duration)
-        else:
-            duration["room"][room] += float(reserv.duration)
-        duration['total'] += float(reserv.duration)
-
-        if cinema not in money["cinema"]:
-            money["cinema"][cinema] = {
-                "cash": float(reserv.cash),
-                "card": float(reserv.card),
-                "rent": int(reserv.sum_rent)
-            }
-        else:
-            money["cinema"][cinema]["cash"] += float(reserv.cash)
-            money["cinema"][cinema]["card"] += float(reserv.card)
-            money["cinema"][cinema]["rent"] += int(reserv.sum_rent)
-
-        if room not in money["room"]:
-            money["room"][room] = {
-                "cash": float(reserv.cash),
-                "card": float(reserv.card),
-                "rent": int(reserv.sum_rent)
-            }
-        else:
-            money["room"][room]["cash"] += float(reserv.cash)
-            money["room"][room]["card"] += float(reserv.card)
-            money["room"][room]["rent"] += int(reserv.sum_rent)
-        money['total'] += int(reserv.sum_rent)
-
-        if cinema not in checkout["cinema"]:
-            checkout["cinema"][cinema] = 0
-            for item in reserv.checkout:
-                checkout["cinema"][cinema] += float(item.sum)
-        else:
-            for item in reserv.checkout:
-                checkout["cinema"][cinema] += float(item.sum)
-
-        if room not in checkout["room"]:
-            checkout["room"][room] = 0
-            for item in reserv.checkout:
-                checkout["room"][room] += float(item.sum)
-        else:
-            for item in reserv.checkout:
-                checkout["room"][room] += float(item.sum)
-        for item in reserv.checkout:
-            checkout['total'] += float(item.sum)
-
-    res = {
-        "duration": duration,
-        "money": money,
-        "checkout": checkout
-    }
-
-    return jsonify(res), 200
 
 @admin.route("/new_user", methods=["POST"])
 @jwt_required
@@ -184,6 +118,7 @@ def get_telephones():
     result = [guest.telephone for guest in guests if re.fullmatch(phone_pattern, guest.telephone)]
 
     return jsonify({'data': result}), 200
+
 
 @admin.route("/logs/<reservation_id>")
 @jwt_required
