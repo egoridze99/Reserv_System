@@ -3,26 +3,26 @@ import json
 
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from datetime import datetime
+from datetime import datetime, timedelta
 from Schedule.utils import count_money, get_sum_of_checkouts, get_money_record, is_date_in_last, check_the_taking, \
     check_not_payment
 from app import db
 from models import *
 from utils.parse_json import parse_json
 
-schedule = Blueprint('schedule', __name__)
+schedule_blueprint = Blueprint('schedule_blueprint', __name__)
 
 
-@schedule.route('/cinemas')
+@schedule_blueprint.route('/cinemas')
 @jwt_required
 def get_cinemas():
     cinemas = Cinema.query.all()
     return jsonify([Cinema.toJson(cinema) for cinema in cinemas])
 
 
-@schedule.route('/seans')
+@schedule_blueprint.route('/reservation')
 @jwt_required
-def get_seans():
+def get_reservations():
     room: 'Room' = json.loads(request.args.get('room'))
     date = request.args.get('date')
     cinema_id = request.args.get('cinema_id')
@@ -37,7 +37,8 @@ def get_seans():
 
     return jsonify([Reservation.toJson(seans) for seans in seanses]), 200
 
-@schedule.route('/seans/search')
+
+@schedule_blueprint.route('/reservation/search')
 @jwt_required
 def search_reservations():
     statuses: list[ReservationStatusEnum] = request.args.get('status')
@@ -76,9 +77,9 @@ def search_reservations():
     return jsonify([Reservation.toJson(reservation) for reservation in reservations]), 200
 
 
-@schedule.route('/seans/<id>', methods=['PUT'])
+@schedule_blueprint.route('/reservation/<id>', methods=['PUT'])
 @jwt_required
-def update_seans(id):
+def update_reservation(id):
     data = parse_json(request.data)
     role = get_jwt_identity()["role"]
     cinema_id = data["cinema_id"]
@@ -87,7 +88,7 @@ def update_seans(id):
     if EmployeeRoleEnum[role] == EmployeeRoleEnum.operator:
         return {"message": "У вас не хватает прав на это"}, 403
 
-    seans = Reservation.query.filter(Reservation.id == id).all()
+    seans = Reservation.query.filter(Reservation.id == id).first()
     room = Room.query.filter(Room.id == data['room']['id']).first()
     guest = Guest.query.filter(Guest.telephone == data['guest']['tel']).first()
 
@@ -95,10 +96,6 @@ def update_seans(id):
         guest = Guest(name=data['guest']['name'], telephone=data['guest']['tel'])
         db.session.add(guest)
 
-    if len(seans) == 0:
-        return {"message": "Error"}, 400
-
-    seans = seans[0]
     old_checkouts = seans.checkout
     checkouts = []
     date = seans.date
@@ -106,21 +103,33 @@ def update_seans(id):
     new_date = datetime.strptime(data['date'], '%Y-%m-%d').date()
     new_time = datetime.strptime(data['time'], '%H:%M').time()
 
+    certificate = None
+    certificate_ident = data["certificate_ident"]
+    if certificate_ident:
+        certificate: 'Certificate' = Certificate.query.filter(Certificate.ident == certificate_ident).first()
+
+        if not certificate:
+            return jsonify({"msg": "Сертификат не найден"}), 404
+
+    if certificate and certificate != seans.certificate:
+        if certificate.status != CertificateStatusEnum.active:
+            return {"msg": "Вы пытаетесь добавить погашенный сертификат"}, 400
+
     if seans.status == ReservationStatusEnum.finished \
             and role != EmployeeRoleEnum.root.name:
-        return {"message": "Нельзя изменять завершенные сеансы!"}, 400
+        return {"msg": "Нельзя изменять завершенные сеансы!"}, 400
 
-    if check_not_payment(role, data):
-        return {"message": "Клиент не заплатил!"}, 400
+    if check_not_payment(role, data, certificate):
+        return {"msg": "Клиент не заплатил!"}, 400
 
-    if date < datetime.now().date() \
+    if date < (datetime.now() - timedelta(days=1)).date() \
             and data['status'] != ReservationStatusEnum.finished.name \
             and role != EmployeeRoleEnum.root.name:
-        return {"message": "Вы пытаетесь отредактировать старый сеанс!"}, 400
+        return {"msg": "Вы пытаетесь отредактировать старый сеанс!"}, 400
 
     if date > datetime.now().date() and data['status'] == ReservationStatusEnum.finished.name \
             and role != EmployeeRoleEnum.root.name:
-        return {"message": "Как может завершиться сеанс в будещем?)"}, 400
+        return {"msg": "Как может завершиться сеанс в будещем?)"}, 400
 
     if check_the_taking(new_date, room, new_time, float(data['duration']), id):
         return {"msg": "Зал занят"}, 400
@@ -141,6 +150,8 @@ def update_seans(id):
         money = count_money(date, cinema_id, data['rent'], data['cash'], data['card'], sum_of_checkouts)
         if money is None:
             return {"message": "Произошла ошибка. Попробуйте снова"}, 400
+        if certificate:
+            certificate.status = CertificateStatusEnum.redeemed
 
     oldValues = json.dumps({
         "time": str(seans.time)[:-3],
@@ -155,6 +166,7 @@ def update_seans(id):
         "cash": seans.cash,
         "guest_name": seans.guest.name,
         "guest_telephone": seans.guest.telephone,
+        "certificate_ident": seans.certificate.ident if seans.certificate else None,
         "checkouts": [{"description": item.description, "sum": item.sum} for item in old_checkouts]
     })
 
@@ -171,6 +183,7 @@ def update_seans(id):
     seans.room = room
     seans.guest = guest
     seans.checkout = checkouts
+    seans.certificate = certificate
 
     newValues = json.dumps({
         "time": str(seans.time)[:-3],
@@ -185,7 +198,8 @@ def update_seans(id):
         "cash": seans.cash,
         "guest_name": seans.guest.name,
         "guest_telephone": seans.guest.telephone,
-        "checkouts": [{"description": item.description, "sum": item.sum} for item in checkouts]
+        "checkouts": [{"description": item.description, "sum": item.sum} for item in checkouts],
+        "certificate_ident": seans.certificate.ident if seans.certificate else None,
     })
 
     updateLog = UpdateLogs(reservation_id=seans.id, created_at=datetime.today().strftime("%d-%m-%Y %H:%M:%S"), author=update_author, new=newValues, old=oldValues)
@@ -200,9 +214,9 @@ def update_seans(id):
     return Reservation.toJson(seans), 200
 
 
-@schedule.route('/seans', methods=['POST'])
+@schedule_blueprint.route('/reservation', methods=['POST'])
 @jwt_required
-def create_seans():
+def create_reservation():
     data = parse_json(request.data)
     name = get_jwt_identity()["name"]
     role = get_jwt_identity()["role"]
@@ -226,6 +240,17 @@ def create_seans():
     if is_date_in_last(date):
         return {"msg": "Дата уже прошла"}, 400
 
+    certificate = None
+    certificate_ident = data["certificate_ident"]
+    if certificate_ident:
+        certificate = Certificate.query.filter(Certificate.ident == certificate_ident).first()
+
+        if not certificate:
+            return jsonify({"msg": "Сертификат не найден"}), 404
+
+    if certificate and certificate.status != CertificateStatusEnum.active:
+        return {"msg": "Сертификат уже погашен"}, 400
+
     reserv = Reservation(
         time=time,
         date=date,
@@ -237,6 +262,7 @@ def create_seans():
         room=room,
         guest=guest,
         author=name,
+        certificate=certificate,
         created_at=datetime.today().strftime("%d-%m-%Y")
     )
     db.session.add(reserv)
@@ -247,7 +273,7 @@ def create_seans():
         return {"msg": "error"}, 400
 
 
-@schedule.route('/money')
+@schedule_blueprint.route('/money')
 @jwt_required
 def get_money():
     date = request.args.get("date")

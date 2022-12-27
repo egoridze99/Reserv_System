@@ -1,6 +1,8 @@
 import json
 from datetime import datetime, timedelta
 
+import shortuuid
+
 from app import db
 import enum
 
@@ -12,6 +14,10 @@ class ReservationStatusEnum(enum.Enum):
     finished = 'finished'
     canceled = 'canceled'
 
+
+class CertificateStatusEnum(enum.Enum):
+    active = "active"
+    redeemed = "redeemed"
 
 class EmployeeRoleEnum(enum.Enum):
     root = "root"
@@ -51,10 +57,20 @@ class Guest(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     name = db.Column(db.String(40), nullable=False)
     telephone = db.Column(db.String(30), nullable=False)
+
     reservation = db.relationship("Reservation", backref='guest')
+    certificate = db.relationship("Certificate", backref='contact')
 
     def __str__(self):
         return "<Гость id = {} Имя = {} Номер = {}>".format(self.id, self.name, self.telephone)
+
+    @staticmethod
+    def toJson(guest: 'Guest'):
+        return {
+            "id": guest.id,
+            "name": guest.name,
+            "telephone": guest.telephone
+        }
 
 
 checkout_reservation = db.Table('checkout_reservation',
@@ -134,6 +150,7 @@ class Reservation(db.Model):
     author = db.Column(db.String(120))
     checkout = db.relationship('Checkout', secondary=checkout_reservation)
     created_at = db.Column(db.String(10))
+    certificate_id = db.Column(db.Integer, db.ForeignKey("certificate.id", name="certificate_id"), unique=True)
 
     status = db.Column(db.Enum(ReservationStatusEnum), default=ReservationStatusEnum.not_allowed, nullable=False)
 
@@ -158,6 +175,7 @@ class Reservation(db.Model):
             'cash': reservation.cash,
             'rent': reservation.sum_rent,
             'created_at': reservation.created_at,
+            "certificate": Certificate.toJson(reservation.certificate) if reservation.certificate else None,
             'guest': {
                 "name": reservation.guest.name,
                 "tel": reservation.guest.telephone
@@ -190,6 +208,63 @@ class User(db.Model):
     role = db.Column(db.Enum(EmployeeRoleEnum), default=EmployeeRoleEnum.admin)
     name = db.Column(db.String(40))
     surname = db.Column(db.String(40))
+
+    certificate = db.relationship("Certificate", backref='author')
+
+    @staticmethod
+    def toJson(user: 'User'):
+        return {
+            "id": user.id,
+            "login": user.login,
+            "role": user.role.name,
+            "name": user.name,
+            "surname": user.surname,
+            "fullname": f"{user.name} {user.surname}"
+        }
+
+
+class Certificate(db.Model):
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+
+    ident = db.Column(db.String(6), unique=True)
+
+    created_at = db.Column(db.String(50))
+    author_id = db.Column(db.Integer, db.ForeignKey("user.id", name="author_id"))
+    contact_id = db.Column(db.Integer, db.ForeignKey("guest.id", name="contact_id"))
+    status = db.Column(db.Enum(CertificateStatusEnum), default=CertificateStatusEnum.active)
+
+    sum = db.Column(db.Integer, nullable=False)
+    cash = db.Column(db.Integer, default=0)
+    card = db.Column(db.Integer, default=0)
+    service = db.Column(db.String(100), nullable=False)
+    note = db.Column(db.Text)
+
+    reservation = db.relationship("Reservation", backref='certificate')
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.ident = shortuuid.ShortUUID().random(length=6)
+
+    @staticmethod
+    def toJson(certificate: 'Certificate'):
+        return {
+            "id": certificate.id,
+            "ident": certificate.ident,
+
+            "created_at": certificate.created_at,
+            "status": certificate.status.name,
+            "sum": certificate.sum,
+            "cash": certificate.cash,
+            "card": certificate.card,
+
+            "service": certificate.service,
+            "note": certificate.note,
+
+            "author": User.toJson(certificate.author),
+            "contact": Guest.toJson(certificate.contact)
+        }
+
+
 
 
 class UpdateLogs(db.Model):

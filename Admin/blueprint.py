@@ -10,10 +10,10 @@ from models import *
 from app import db
 from utils.sa_query_result_to_dict import sa_query_result_to_dict
 
-admin = Blueprint('myadmin', __name__)
+admin_blueprint = Blueprint('admin_blueprint', __name__)
 
 
-@admin.route('/login', methods=["POST"])
+@admin_blueprint.route('/login', methods=["POST"])
 def index():
     if not request.is_json:
         return jsonify({"msg": "Ошибка сервера"}), 400
@@ -39,6 +39,7 @@ def index():
         return jsonify({"msg": "Неверный пароль"}), 400
 
     jwt = create_access_token(identity={
+        "id": user.id,
         "login": login,
         "role": user.role.value,
         "name": f"{user.name} {user.surname}"
@@ -47,7 +48,7 @@ def index():
     return {"jwt": jwt}, 200
 
 
-@admin.route("/common")
+@admin_blueprint.route("/common")
 @jwt_required
 def get_common_info():
     identity = get_jwt_identity()
@@ -67,7 +68,7 @@ def get_common_info():
     }), 200
 
 
-@admin.route("/new_user", methods=["POST"])
+@admin_blueprint.route("/new_user", methods=["POST"])
 @jwt_required
 def new_user():
     identity = get_jwt_identity()
@@ -110,7 +111,7 @@ def new_user():
         return {"message": "error"}, 400
 
 
-@admin.route("/telephones")
+@admin_blueprint.route("/telephones")
 @jwt_required
 def get_telephones():
     phone_pattern = r'[\+]?[78][\-]?[\d]{3}[\-]?[\d]{3}[\-]?[\d]{2}[\-]?[\d]{2}'
@@ -120,7 +121,7 @@ def get_telephones():
     return jsonify({'data': result}), 200
 
 
-@admin.route("/logs/<reservation_id>")
+@admin_blueprint.route("/logs/<reservation_id>")
 @jwt_required
 def get_logs(reservation_id):
     logs = UpdateLogs.query.filter(UpdateLogs.reservation_id == reservation_id).all()

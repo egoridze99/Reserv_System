@@ -5,11 +5,12 @@ from collections import namedtuple
 from models import *
 
 
-def check_not_payment(role: EmployeeRoleEnum, data):
+def check_not_payment(role: EmployeeRoleEnum, data, certificate: "Certificate" or None):
     return data['card'] == 0 \
             and data['cash'] == 0 \
             and data['status'] == ReservationStatusEnum.finished.name \
             and data['rent'] != 0 \
+            and not certificate \
             and role != EmployeeRoleEnum.root.name
 
 
@@ -22,7 +23,7 @@ def get_sum_of_checkouts(checkouts: list) -> int:
     return sum_of_checkouts
 
 
-def count_money(date, cinema_id: int, income: int, cash: int, card: int, expense: int) -> Money or None:
+def count_money(date, cinema_id: int, income: int, cash: int = 0, card: int = 0, expense: int = 0) -> Money or None:
     """
     Функция проверяет существует ли запись для отведенных дней. \n
     Если есть то проводит калькуяции, если нет, то создает и проводит. \n
