@@ -60,6 +60,7 @@ def create_certificate():
 
     author = User.query.filter(User.id == get_jwt_identity()["id"]).first()
     guest = Guest.query.filter(Guest.telephone == data["telephone"]).first()
+    cinema = Cinema.query.filter(Cinema.id == data["cinema_id"]).first()
 
     if guest is None:
         guest = Guest(name=data['contact'], telephone=data['telephone'])
@@ -73,7 +74,8 @@ def create_certificate():
         service=data["service"],
         note=data["note"],
         author=author,
-        contact=guest
+        contact=guest,
+        cinema=cinema
     )
 
     money = count_money(datetime.today().date(),

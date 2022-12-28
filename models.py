@@ -29,7 +29,8 @@ class Cinema(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     name = db.Column(db.String(40), nullable=False)
     room = db.relationship("Room", backref='cinema')
-    money = db.relationship("Money", backref='money')
+    money = db.relationship("Money", backref='cinema')
+    certificate = db.relationship("Certificate", backref="cinema")
 
     def __str__(self):
         return "<Кинотеатр id={} адрес={}>".format(self.id, self.name)
@@ -229,8 +230,11 @@ class Certificate(db.Model):
     ident = db.Column(db.String(6), unique=True)
 
     created_at = db.Column(db.String(50))
+
     author_id = db.Column(db.Integer, db.ForeignKey("user.id", name="author_id"))
     contact_id = db.Column(db.Integer, db.ForeignKey("guest.id", name="contact_id"))
+    cinema_id = db.Column(db.Integer, db.ForeignKey('cinema.id', name="cinema_id"))
+
     status = db.Column(db.Enum(CertificateStatusEnum), default=CertificateStatusEnum.active)
 
     sum = db.Column(db.Integer, nullable=False)
@@ -261,7 +265,8 @@ class Certificate(db.Model):
             "note": certificate.note,
 
             "author": User.toJson(certificate.author),
-            "contact": Guest.toJson(certificate.contact)
+            "contact": Guest.toJson(certificate.contact),
+            "cinema": Cinema.toJson(certificate.cinema)
         }
 
 
