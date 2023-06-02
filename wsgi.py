@@ -52,16 +52,16 @@ def create_app():
     admin_panel.add_view(ModelView(UpdateLogs, db.session))
     admin_panel.add_view(ModelView(Certificate, db.session))
 
-    # CONFIGURING SCHEDULER
-    background_scheduler = BackgroundScheduler()
-    scheduler = Scheduler(background_scheduler, db, flask_app)
-    scheduler.register_clear_expired_queue_items_timer()
+    return flask_app
 
-    return flask_app, scheduler
 
+app = create_app()
 
 if __name__ == '__main__':
-    app, scheduler = create_app()
+    # CONFIGURING SCHEDULER
+    background_scheduler = BackgroundScheduler()
+    scheduler = Scheduler(background_scheduler, db, app)
+    scheduler.register_clear_expired_queue_items_timer()
 
     scheduler.start()
     app.run()
