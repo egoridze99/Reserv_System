@@ -62,11 +62,18 @@ def update_reservation(reservation_id: str):
             and role != EmployeeRoleEnum.root.name:
         return {"msg": "Вы пытаетесь отредактировать старый сеанс!"}, 400
 
-    if datetime.combine(date, reservation.time) > datetime.now() \
-            and (datetime.combine(date, reservation.time) + timedelta(hours=reservation.duration)).time() > time(8) \
-            and data['status'] == ReservationStatusEnum.finished.name \
-            and role != EmployeeRoleEnum.root.name:
-        return {"msg": "Как может завершиться сеанс в будещем?)"}, 400
+    reservation_end_date = datetime.combine(date, reservation.time) + timedelta(hours=reservation.duration)
+    if reservation_end_date.date() > datetime.now().date():
+        def check_other_constraints(data, role):
+            return ReservationStatusEnum[data['status']] == ReservationStatusEnum.finished \
+                   and EmployeeRoleEnum[role] != EmployeeRoleEnum.root
+
+        if reservation_end_date.date() == (datetime.now() + timedelta(days=1)).date():
+            if reservation_end_date.time() > time(8) and check_other_constraints(data, role):
+                return {"msg": "Как может завершиться сеанс в будещем?)"}, 400
+        else:
+            if check_other_constraints(data, role):
+                return {"msg": "Как может завершиться сеанс в будещем?)"}, 400
 
     if check_the_taking(new_date, room, new_date.time(), float(data['duration']), id):
         return {"msg": "Зал занят"}, 400
