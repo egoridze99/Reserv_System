@@ -62,7 +62,9 @@ def update_reservation(reservation_id: str):
             and role != EmployeeRoleEnum.root.name:
         return {"msg": "Вы пытаетесь отредактировать старый сеанс!"}, 400
 
-    if date > datetime.now().date() and data['status'] == ReservationStatusEnum.finished.name \
+    if datetime.combine(date, reservation.time) > datetime.now() \
+            and (datetime.combine(date, reservation.time) + timedelta(hours=reservation.duration)).time() > time(8) \
+            and data['status'] == ReservationStatusEnum.finished.name \
             and role != EmployeeRoleEnum.root.name:
         return {"msg": "Как может завершиться сеанс в будещем?)"}, 400
 

@@ -22,9 +22,9 @@ def register_user():
     surname = request.json.get("surname")
     role = request.json.get("role")
 
-    user = User.query.filter(User.login == login).first()
+    user = User.query.filter(User.login == username).first()
 
-    if not login:
+    if not username:
         return {"msg": "Логин пустой"}, 400
 
     if not password:
