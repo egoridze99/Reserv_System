@@ -5,14 +5,15 @@ from flask_jwt_extended import get_jwt_identity
 
 from db import db
 from domains.reservation.handlers.utils import check_the_taking
-from models import EmployeeRoleEnum, Room, Guest, Certificate, CertificateStatusEnum, Reservation
+from models import EmployeeRoleEnum, Room, Guest, Certificate, CertificateStatusEnum, Reservation, User
+from typings import UserJwtIdentity
 from utils.is_date_in_last import is_date_in_last
 from utils.parse_json import parse_json
 
 
 def create_reservation():
+    identity: UserJwtIdentity = get_jwt_identity()
     data = parse_json(request.data)
-    name = get_jwt_identity()["name"]
     role = get_jwt_identity()["role"]
 
     if EmployeeRoleEnum[role] == EmployeeRoleEnum.operator:
@@ -45,6 +46,8 @@ def create_reservation():
     if certificate and certificate.status != CertificateStatusEnum.active:
         return {"msg": "Сертификат уже погашен"}, 400
 
+    author = User.query.filter(User.id == int(identity["id"])).first()
+
     reservation = Reservation(
         time=time,
         date=date,
@@ -55,7 +58,7 @@ def create_reservation():
         sum_rent=data['rent'],
         room=room,
         guest=guest,
-        author=name,
+        author=author,
         certificate=certificate,
         created_at=datetime.today().strftime("%d-%m-%Y")
     )

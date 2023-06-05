@@ -1,6 +1,6 @@
 from typing import TypedDict
 
-from models import EmployeeRoleEnum
+from models import EmployeeRoleEnum, UserStatusEnum
 
 
 class UserJwtIdentity(TypedDict):
@@ -8,3 +8,4 @@ class UserJwtIdentity(TypedDict):
     login: str
     role: EmployeeRoleEnum
     name: str
+    status: UserStatusEnum

@@ -9,47 +9,6 @@ from models import User, EmployeeRoleEnum
 from utils.parse_json import parse_json
 
 
-def register_user():
-    identity = get_jwt_identity()
-    role = identity["role"]
-
-    if EmployeeRoleEnum[role] != EmployeeRoleEnum.root:
-        return {"message": "Недостаточно прав"}, 403
-
-    username = request.json.get("login")
-    password = request.json.get("password")
-    name = request.json.get("name")
-    surname = request.json.get("surname")
-    role = request.json.get("role")
-
-    user = User.query.filter(User.login == username).first()
-
-    if not username:
-        return {"msg": "Логин пустой"}, 400
-
-    if not password:
-        return {"msg": "Пароль пустой"}, 400
-
-    if not name:
-        return {"msg": "Имя пустое"}, 400
-
-    if not surname:
-        return {"msg": "Фамилия пустая"}, 400
-
-    if user:
-        return {"msg": "Такой пользователь уже есть"}, 400
-
-    password = hashlib.md5(password.encode()).hexdigest()
-    user = User(login=username, password=password, name=name, surname=surname, role=EmployeeRoleEnum[role].value)
-
-    db.session.add(user)
-    try:
-        db.session.commit()
-        return {"message": "ok"}, 200
-    except Exception:
-        return {"message": "error"}, 400
-
-
 def login():
     if not request.is_json:
         return jsonify({"msg": "Ошибка сервера"}), 400
@@ -78,7 +37,8 @@ def login():
         "id": user.id,
         "login": username,
         "role": user.role.value,
-        "name": f"{user.name} {user.surname}"
+        "name": f"{user.name} {user.surname}",
+        "status": user.status.value
     }, expires_delta=timedelta(hours=6))
 
     return jsonify({"jwt": jwt}), 200

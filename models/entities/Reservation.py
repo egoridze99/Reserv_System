@@ -16,7 +16,7 @@ class Reservation(AbstractBaseModel):
     guest_id = db.Column(db.Integer, db.ForeignKey('guest.id', name="guest_id"))
     film = db.Column(db.String(170))
     note = db.Column(db.Text)
-    author = db.Column(db.String(120))
+    author_id = db.Column(db.Integer, db.ForeignKey('user.id', name="author_id"))
     created_at = db.Column(db.String(10))
     certificate_id = db.Column(db.Integer, db.ForeignKey("certificate.id", name="certificate_id"), unique=True)
     status = db.Column(db.Enum(ReservationStatusEnum), default=ReservationStatusEnum.not_allowed, nullable=False)
@@ -36,7 +36,7 @@ class Reservation(AbstractBaseModel):
             'duration': reservation.duration,
             'count': reservation.count,
             'film': reservation.film,
-            'author': reservation.author,
+            'author': {"fullname": f"{reservation.author.name} {reservation.author.surname}", "status": reservation.author.status.name},
             'note': reservation.note,
             'status': reservation.status.name,
             'card': reservation.card,
