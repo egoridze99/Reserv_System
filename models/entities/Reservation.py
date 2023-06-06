@@ -1,4 +1,5 @@
 from db import db
+from models import UserStatusEnum
 from models.abstract import AbstractBaseModel
 from models.dictionaries import checkout_reservation
 from models.entities.Certificate import Certificate
@@ -36,7 +37,10 @@ class Reservation(AbstractBaseModel):
             'duration': reservation.duration,
             'count': reservation.count,
             'film': reservation.film,
-            'author': {"fullname": f"{reservation.author.name} {reservation.author.surname}", "status": reservation.author.status.name},
+            'author': {"fullname": f"{reservation.author.name} {reservation.author.surname}" \
+                if reservation.author is not None else "Кривой юзер",
+                       "status": reservation.author.status.name \
+                if reservation.author is not None else UserStatusEnum.deprecated.name},
             'note': reservation.note,
             'status': reservation.status.name,
             'card': reservation.card,
