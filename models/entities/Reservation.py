@@ -1,5 +1,5 @@
 from db import db
-from models import UserStatusEnum
+from models.enums.UserStatusEnum import UserStatusEnum
 from models.abstract import AbstractBaseModel
 from models.dictionaries import checkout_reservation
 from models.entities.Certificate import Certificate
