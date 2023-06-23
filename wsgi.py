@@ -13,7 +13,7 @@ from domains import references_blueprint, reservations_blueprint, money_blueprin
     queue_blueprint, base_blueprint, admin_blueprint, user_blueprint
 
 from db import db
-from services import Scheduler
+from scheduler_jobs import expired_queue_item_cleaner
 from models import *
 
 
@@ -58,12 +58,18 @@ def create_app():
 
 app = create_app()
 
-if __name__ == '__main__':
-    # CONFIGURING SCHEDULER
-    background_scheduler = BackgroundScheduler()
-    scheduler = Scheduler(background_scheduler, db, app)
-    scheduler.register_clear_expired_queue_items_timer()
+# CONFIGURING SCHEDULER
+scheduler = BackgroundScheduler(daemon=True)
+scheduler.add_job(lambda: expired_queue_item_cleaner(app, db),
+                  'cron',
+                  id="queue_cleaner",
+                  name="queue_cleaner",
+                  day="*",
+                  month="*",
+                  hour="08",
+                  minute='00',
+                  replace_existing=True)
 
+if __name__ == '__main__':
     scheduler.start()
     app.run()
-

@@ -1,6 +1,6 @@
 from db import db
 from models.abstract import AbstractBaseModel
-from models.dictionaries import queue_room
+from models.dictionaries import queue_room, queue_logs
 from models.entities.Guest import Guest
 from models.entities.Room import Room
 from models.entities.User import User
@@ -23,6 +23,7 @@ class ReservationQueue(AbstractBaseModel):
     author_id = db.Column(db.Integer, db.ForeignKey("user.id", name="author_id"))
 
     rooms = db.relationship('Room', secondary=queue_room)
+    view_logs = db.relationship('ReservationQueueViewLog', secondary=queue_logs)
 
     @staticmethod
     def to_json(reservation: 'ReservationQueue'):
@@ -40,5 +41,8 @@ class ReservationQueue(AbstractBaseModel):
             'author': User.to_json(reservation.author),
             'rooms': [Room.to_json(room) for room in reservation.rooms],
             'contact': Guest.to_json(reservation.contact),
-            'reservation_id': reservation.reservation_id
+            'reservation_id': reservation.reservation_id,
+            'view_by': [{"reservation_id": log.reservation.id,
+                         "user": User.to_json(log.user)
+                         } for log in reservation.view_logs]
         }

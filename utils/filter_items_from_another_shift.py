@@ -19,18 +19,28 @@ def filter_items_from_another_shift(item: 'Reservation' or 'ReservationQueue', d
     Данный фильтр показывает, должен ли резерв выводиться вместе с резервами за выбранную дату
     """
 
-    has_time_attribute = isinstance(item, Reservation)
+    if isinstance(item, ReservationQueue):
+        if item.end_time is None:
+            shift_date = item.date
+            time_point = item.start_time
+        else:
+            shift_date = item.date if item.end_time > item.start_time else item.date + timedelta(days=1)
+            time_point = item.end_time
+    else:
+        shift_date = item.date
+        time_point = item.time
 
     # Дата окончания резерва
-    item_end_date = datetime.combine(item.date, item.time if has_time_attribute else item.end_time) \
+    item_end_date = datetime.combine(shift_date, time_point) \
                     + timedelta(hours=item.duration)
+
     if item_end_date.date() not in [date, date + timedelta(days=1)]:
         return False
 
     if item_end_date.time() <= time(8):
-        if item.date != date:
+        if shift_date != date:
             return True
 
-        return item.date != item_end_date.date()
+        return shift_date != item_end_date.date()
 
-    return item.date == date
+    return shift_date == date

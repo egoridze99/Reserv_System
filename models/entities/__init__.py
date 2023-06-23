@@ -8,3 +8,4 @@ from models.entities.ReservationQueue import ReservationQueue
 from models.entities.Room import Room
 from models.entities.UpdateLogs import UpdateLogs
 from models.entities.User import User
+from models.entities.ReservationQueueViewLog import ReservationQueueViewLog

@@ -1,21 +1,23 @@
 from datetime import datetime, timedelta, time
-from typing import Optional
+from typing import Optional, List
 
 from flask import request, jsonify
 from flask_jwt_extended import get_jwt_identity
 
 from domains.reservation.handlers.utils import check_not_payment, check_the_taking, get_sum_of_checkouts, \
-    dump_reservation_to_update_log
+    dump_reservation_to_update_log, search_available_items_from_queue
 from db import db
 from models import EmployeeRoleEnum, Reservation, Room, Guest, Certificate, CertificateStatusEnum, \
-    ReservationStatusEnum, Checkout, UpdateLogs
+    ReservationStatusEnum, Checkout, UpdateLogs, User, ReservationQueue, ReservationQueueViewLog
 from utils.count_money import count_money
 from utils.parse_json import parse_json
 from typings import UserJwtIdentity
 
 
 def update_reservation(reservation_id: str):
-    data = parse_json(request.data)
+    request_body = parse_json(request.data)
+    data = request_body["data"]
+    current_client_time = datetime.strptime(request_body["currentTime"], "%H:%M").time()
     identity: 'UserJwtIdentity' = get_jwt_identity()
 
     role = identity["role"]
@@ -29,6 +31,8 @@ def update_reservation(reservation_id: str):
     reservation = Reservation.query.filter(Reservation.id == reservation_id).first()
     room = Room.query.filter(Room.id == data['room']['id']).first()
     guest = Guest.query.filter(Guest.telephone == data['guest']['tel']).first()
+
+    user = User.query.filter(User.id == identity["id"]).first()
 
     if guest is None:
         guest = Guest(name=data['guest']['name'], telephone=data['guest']['tel'])
@@ -75,7 +79,7 @@ def update_reservation(reservation_id: str):
             if check_other_constraints(data, role):
                 return {"msg": "Как может завершиться сеанс в будещем?)"}, 400
 
-    if check_the_taking(new_date, room, new_date.time(), float(data['duration']), id):
+    if check_the_taking(new_date.date(), room, new_date.time(), float(data['duration']), reservation.id):
         return {"msg": "Зал занят"}, 400
 
     for check in data['checkouts']:
@@ -105,8 +109,13 @@ def update_reservation(reservation_id: str):
 
         db.session.add(money)
 
-    if data['status'] == ReservationStatusEnum.canceled.name:
-        print("Ща че то буит")
+    queue: List['ReservationQueue'] = []
+    if ReservationStatusEnum[data['status']] == ReservationStatusEnum.canceled:
+        queue = search_available_items_from_queue(reservation, current_client_time)
+        log_item = ReservationQueueViewLog(reservation=reservation, user=user)
+        for queue_item in queue:
+            queue_item.view_logs.append(log_item)
+            db.session.add(queue_item)
 
     old_values = dump_reservation_to_update_log(reservation)
     reservation.date = new_date.date()
@@ -131,6 +140,8 @@ def update_reservation(reservation_id: str):
         db.session.add(reservation)
         db.session.add(update_log)
         db.session.commit()
-        return Reservation.to_json(reservation), 200
+        return {"reservation": Reservation.to_json(reservation),
+                "queue": [ReservationQueue.to_json(queue_item) for queue_item in queue]
+                }, 200
     except:
         return {"message": "Непредвиденная ошибка"}, 400

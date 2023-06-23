@@ -1,15 +1,16 @@
 from datetime import datetime, timedelta
 
-from models import Reservation, ReservationStatusEnum
+from models import Reservation, ReservationStatusEnum, Room
 
 
-def check_the_taking(date: datetime.date, room: int, time: datetime.time, duration: float, reservation_id=None):
+def check_the_taking(date: datetime.date, room: Room, time: datetime.time, duration: float, reservation_id=None):
     """Проверяет занят ли зал"""
+    reservation_id = int(reservation_id) if type(reservation_id) == str else reservation_id
 
-    reservations = Reservation\
-        .query\
-        .filter(Reservation.date.in_([date - timedelta(days=1), date]))\
-        .filter(Reservation.room == room)\
+    reservations = Reservation \
+        .query \
+        .filter(Reservation.date.in_([date - timedelta(days=1), date, date + timedelta(days=1)])) \
+        .filter(Reservation.room == room) \
         .all()
 
     new_reservation_start_date = datetime.combine(date, time)
@@ -19,7 +20,7 @@ def check_the_taking(date: datetime.date, room: int, time: datetime.time, durati
         if reservation.status == ReservationStatusEnum.canceled:
             continue
 
-        if reservation_id is not None and reservation.id == int(reservation_id):
+        if reservation_id is not None and reservation.id == reservation_id:
             continue
 
         reservation_start_date = datetime.combine(reservation.date, reservation.time)

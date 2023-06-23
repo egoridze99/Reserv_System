@@ -9,3 +9,4 @@ class Config:
     FLASK_ADMIN_SWATCH = 'cerulean'
     SECRET_KEY = 'Sy6e_r!^qwer.dedez'
     RENDER_AS_BATCH = True
+    SCHEDULER_API_ENABLED = True
