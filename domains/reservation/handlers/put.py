@@ -140,8 +140,6 @@ def update_reservation(reservation_id: str):
         db.session.add(reservation)
         db.session.add(update_log)
         db.session.commit()
-        return {"reservation": Reservation.to_json(reservation),
-                "queue": [ReservationQueue.to_json(queue_item) for queue_item in queue]
-                }, 200
+        return jsonify([queue_item.id for queue_item in queue]), 200
     except:
         return {"message": "Непредвиденная ошибка"}, 400

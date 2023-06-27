@@ -65,6 +65,6 @@ def create_reservation():
     db.session.add(reservation)
     try:
         db.session.commit()
-        return Reservation.to_json(reservation), 200
+        return {"msg": "ok"}, 201
     except Exception:
         return {"msg": "error"}, 400

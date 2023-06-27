@@ -6,16 +6,21 @@ from domains.reservation.handlers.utils.check_the_taking import check_the_taking
 from models import ReservationQueue, Reservation, QueueStatusEnum
 
 
-def search_available_items_from_queue(reservation: 'Reservation', current_client_time: datetime.time) -> List['ReservationQueue']:
+def search_available_items_from_queue(reservation: 'Reservation', current_client_time: datetime.time) -> List[
+    'ReservationQueue']:
     reservation_start_date = datetime.combine(reservation.date, reservation.time)
     reservation_end_date = reservation_start_date + timedelta(hours=reservation.duration)
 
-    queue_items: List[ReservationQueue] = ReservationQueue.query.\
-        filter(ReservationQueue.date >= reservation_start_date.date()).\
-        filter(ReservationQueue.date <= reservation_end_date.date()).\
-        filter(ReservationQueue.start_time >= current_client_time).\
-        filter(ReservationQueue.status == QueueStatusEnum.active).\
+    queue_items: List[ReservationQueue] = ReservationQueue.query. \
+        filter(ReservationQueue.date >= reservation_start_date.date()). \
+        filter(ReservationQueue.date <= reservation_end_date.date()). \
+        filter(ReservationQueue.status == QueueStatusEnum.active). \
         all()
+
+    queue_items = list(filter(lambda x:
+                              x.start_time >= current_client_time
+                              if x.end_time is None
+                              else x.end_time >= current_client_time, queue_items))
 
     result = []
     for item in queue_items:
