@@ -17,7 +17,7 @@ from typings import UserJwtIdentity
 def update_reservation(reservation_id: str):
     request_body = parse_json(request.data)
     data = request_body["data"]
-    current_client_time = datetime.strptime(request_body["currentTime"], "%H:%M").time()
+    current_client_date = datetime.strptime(request_body["currentTime"], "%Y-%m-%d %H:%M")
     identity: 'UserJwtIdentity' = get_jwt_identity()
 
     role = identity["role"]
@@ -111,7 +111,7 @@ def update_reservation(reservation_id: str):
 
     queue: List['ReservationQueue'] = []
     if ReservationStatusEnum[data['status']] == ReservationStatusEnum.canceled:
-        queue = search_available_items_from_queue(reservation, current_client_time)
+        queue = search_available_items_from_queue(reservation, current_client_date)
         log_item = ReservationQueueViewLog(reservation=reservation, user=user)
         for queue_item in queue:
             queue_item.view_logs.append(log_item)

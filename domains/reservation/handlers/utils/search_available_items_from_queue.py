@@ -6,7 +6,19 @@ from domains.reservation.handlers.utils.check_the_taking import check_the_taking
 from models import ReservationQueue, Reservation, QueueStatusEnum
 
 
-def search_available_items_from_queue(reservation: 'Reservation', current_client_time: datetime.time) -> List[
+def filter_expired_item(item: 'ReservationQueue', current_client_date: datetime):
+    item_start_date = datetime.combine(item.date, item.start_time)
+    item_end_date: datetime or None = None
+
+    if item.end_time is not None:
+        should_add_day = item.end_time < item.start_time
+        date = item.date + timedelta(days=1) if should_add_day else item.date
+        item_end_date = datetime.combine(date, item.end_time)
+
+    return item_start_date >= current_client_date if item_end_date is None else item_end_date >= current_client_date
+
+
+def search_available_items_from_queue(reservation: 'Reservation', current_client_date: datetime) -> List[
     'ReservationQueue']:
     reservation_start_date = datetime.combine(reservation.date, reservation.time)
     reservation_end_date = reservation_start_date + timedelta(hours=reservation.duration)
@@ -17,10 +29,7 @@ def search_available_items_from_queue(reservation: 'Reservation', current_client
         filter(ReservationQueue.status == QueueStatusEnum.active). \
         all()
 
-    queue_items = list(filter(lambda x:
-                              x.start_time >= current_client_time
-                              if x.end_time is None
-                              else x.end_time >= current_client_time, queue_items))
+    queue_items = list(filter(lambda i: filter_expired_item(i, current_client_date), queue_items))
 
     result = []
     for item in queue_items:
