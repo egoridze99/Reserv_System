@@ -17,7 +17,6 @@ class ReservationQueue(AbstractBaseModel):
     guests_count = db.Column(db.Integer, nullable=False)
     has_another_reservation = db.Column(db.Boolean, default=False, nullable=False)
     status = db.Column(db.Enum(QueueStatusEnum), default=QueueStatusEnum.active)
-    reservation_id = db.Column(db.Integer, db.ForeignKey("reservation.id", name="reservation_id"), nullable=True)
     note = db.Column(db.Text)
     created_at = db.Column(db.String(50))
     author_id = db.Column(db.Integer, db.ForeignKey("user.id", name="author_id"))
@@ -41,8 +40,8 @@ class ReservationQueue(AbstractBaseModel):
             'author': User.to_json(reservation.author),
             'rooms': [Room.to_json(room) for room in reservation.rooms],
             'contact': Guest.to_json(reservation.contact),
-            'reservation_id': reservation.reservation_id,
             'view_by': [{"reservation_id": log.reservation.id,
-                         "user": User.to_json(log.user)
+                         "user": User.to_json(log.user),
+                         "created_at": str(log.created_at)[:8:]
                          } for log in reservation.view_logs]
         }
