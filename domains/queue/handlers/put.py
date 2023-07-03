@@ -43,3 +43,18 @@ def edit_queue_item(id: int):
         return {"msg": "ok"}, 200
     except:
         return {"msg": "Произошла ошибка при сохранении"}, 400
+
+
+def close_queue_item(id: int):
+    queue_item: 'ReservationQueue' = ReservationQueue.query.filter_by(id=id).first()
+    if queue_item is None:
+        return {"msg": "Элемента с таким id не найдено в очереди"}, 404
+
+    queue_item.status = QueueStatusEnum.reserved
+
+    try:
+        db.session.add(queue_item)
+        db.session.commit()
+        return {"msg": "ok"}, 200
+    except:
+        return {"msg": "Произошла непредвиденная ошибка"}, 400

@@ -36,3 +36,10 @@ def create_reservation_in_queue():
 @check_user_status
 def edit_queue_item(id: str):
     return handlers.edit_queue_item(int(id))
+
+
+@queue_blueprint.route('/close/<id>', methods=['PUT'])
+@jwt_required
+@check_user_status
+def close_queue_item(id: str):
+    return handlers.close_queue_item(int(id))
