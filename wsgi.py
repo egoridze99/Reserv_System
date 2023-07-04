@@ -60,15 +60,13 @@ def create_app():
 app = create_app()
 
 # CONFIGURING SCHEDULER
-scheduler = BackgroundScheduler(daemon=True)
+scheduler = BackgroundScheduler(daemon=False)
 scheduler.add_job(lambda: expired_queue_item_cleaner(app, db),
                   'cron',
                   id="queue_cleaner",
                   name="queue_cleaner",
-                  day="*",
-                  month="*",
-                  hour="08",
-                  minute='00',
+                  hour='14',
+                  minute='55',
                   replace_existing=True)
 
 if __name__ == '__main__':
