@@ -75,8 +75,8 @@ def configure_scheduler(app: 'Flask', db: 'SQLAlchemy'):
                       'cron',
                       id="queue_cleaner",
                       name="queue_cleaner",
-                      hour='15',
-                      minute='25',
+                      hour='8',
+                      minute='0',
                       replace_existing=True)
 
     return scheduler
