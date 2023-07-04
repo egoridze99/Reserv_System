@@ -7,6 +7,7 @@ from flask_jwt_extended import JWTManager
 from flask_migrate import Migrate, MigrateCommand
 from flask_script import Manager
 import sys
+from flask_sqlalchemy import SQLAlchemy
 
 from config import Config
 
@@ -16,6 +17,17 @@ from domains import references_blueprint, reservations_blueprint, money_blueprin
 from db import db
 from scheduler_jobs import expired_queue_item_cleaner
 from models import *
+
+
+def get_application_port():
+    port = 5000
+
+    try:
+        port = sys.argv[1]
+    except IndexError:
+        print("Порт не задан. Используется порт по умолчанию")
+
+    return port
 
 
 def create_app():
@@ -57,24 +69,28 @@ def create_app():
     return flask_app
 
 
-app = create_app()
+def configure_scheduler(app: 'Flask', db: 'SQLAlchemy'):
+    scheduler = BackgroundScheduler(daemon=False)
+    scheduler.add_job(lambda: expired_queue_item_cleaner(app, db),
+                      'cron',
+                      id="queue_cleaner",
+                      name="queue_cleaner",
+                      hour='15',
+                      minute='20',
+                      replace_existing=True)
 
-# CONFIGURING SCHEDULER
-scheduler = BackgroundScheduler(daemon=False)
-scheduler.add_job(lambda: expired_queue_item_cleaner(app, db),
-                  'cron',
-                  id="queue_cleaner",
-                  name="queue_cleaner",
-                  hour='14',
-                  minute='55',
-                  replace_existing=True)
+    return scheduler
 
-if __name__ == '__main__':
-    port = 5000
-    try:
-        port = sys.argv[1]
-    except IndexError:
-        print("Порт не задан")
+
+def configure_application():
+    app = create_app()
+    scheduler = configure_scheduler(app, db)
 
     scheduler.start()
-    app.run(port=port)
+
+    return app
+
+
+if __name__ == '__main__':
+    app = configure_application()
+    app.run(port=get_application_port())
