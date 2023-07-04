@@ -50,6 +50,9 @@ def close_queue_item(id: int):
     if queue_item is None:
         return {"msg": "Элемента с таким id не найдено в очереди"}, 404
 
+    if queue_item.status not in (QueueStatusEnum.active, QueueStatusEnum.waiting):
+        return {"msg": "Статус элемента в очереди - неактивен"}, 400
+
     queue_item.status = QueueStatusEnum.reserved
 
     try:

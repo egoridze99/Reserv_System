@@ -6,6 +6,7 @@ from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from flask_migrate import Migrate, MigrateCommand
 from flask_script import Manager
+import sys
 
 from config import Config
 
@@ -71,5 +72,11 @@ scheduler.add_job(lambda: expired_queue_item_cleaner(app, db),
                   replace_existing=True)
 
 if __name__ == '__main__':
+    port = 5000
+    try:
+        port = sys.argv[1]
+    except IndexError:
+        print("Порт не задан")
+
     scheduler.start()
-    app.run()
+    app.run(port=port)
