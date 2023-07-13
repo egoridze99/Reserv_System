@@ -24,7 +24,7 @@ def filter_items_from_another_shift(item: 'Reservation' or 'ReservationQueue', d
             shift_date = item.date
             time_point = item.start_time
         else:
-            shift_date = item.date if item.end_time > item.start_time else item.date + timedelta(days=1)
+            shift_date = item.date if item.end_time >= item.start_time else item.date + timedelta(days=1)
             time_point = item.end_time
     else:
         shift_date = item.date

@@ -82,15 +82,17 @@ def configure_scheduler(app: 'Flask', db: 'SQLAlchemy'):
     return scheduler
 
 
-def configure_application():
+def configure_application(no_scheduler=False):
     app = create_app()
-    scheduler = configure_scheduler(app, db)
 
-    scheduler.start()
+    if not no_scheduler:
+        scheduler = configure_scheduler(app, db)
+
+        scheduler.start()
 
     return app
 
 
 if __name__ == '__main__':
-    app = configure_application()
+    app = configure_application(no_scheduler=True)
     app.run(port=get_application_port())
