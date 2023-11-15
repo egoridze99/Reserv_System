@@ -11,12 +11,12 @@ def get_reservations():
     date = datetime.strptime(request.args.get('date'), '%Y-%m-%d').date()
     cinema_id = request.args.get('cinema_id')
 
-    if not room_id or not date or not cinema_id:
+    if not date or not cinema_id:
         return {"message": "Не все данные"}, 400
 
     reservations = Reservation.query.join(Room).filter(Reservation.date.in_([date, date + timedelta(days=1)]))
 
-    if room_id == -1:
+    if not room_id:
         reservations = reservations.filter(Room.cinema_id == cinema_id).all()
     else:
         reservations = reservations.filter(Room.id == room_id).all()
