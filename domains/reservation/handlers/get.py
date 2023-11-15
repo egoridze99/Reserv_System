@@ -7,19 +7,19 @@ from utils.filter_items_from_another_shift import filter_items_from_another_shif
 
 
 def get_reservations():
-    room = json.loads(request.args.get('room'))
+    room_id = request.args.get('room_id')
     date = datetime.strptime(request.args.get('date'), '%Y-%m-%d').date()
     cinema_id = request.args.get('cinema_id')
 
-    if not room or not date:
+    if not room_id or not date or not cinema_id:
         return {"message": "Не все данные"}, 400
 
     reservations = Reservation.query.join(Room).filter(Reservation.date.in_([date, date + timedelta(days=1)]))
 
-    if room["id"] == -1:
+    if room_id == -1:
         reservations = reservations.filter(Room.cinema_id == cinema_id).all()
     else:
-        reservations = reservations.filter(Room.id == room["id"]).all()
+        reservations = reservations.filter(Room.id == room_id).all()
 
     reservations = filter(lambda x: filter_items_from_another_shift(x, date), reservations)
 
