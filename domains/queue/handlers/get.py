@@ -64,7 +64,7 @@ def search_in_queue():
     queue: list['ReservationQueue'] = queue_query.all()
 
     if rooms:
-        rooms_id = [room["id"] for room in json.loads(rooms)]
+        rooms_id = json.loads(rooms)
         queue = list(filter(lambda i: intersection([room.id for room in i.rooms], rooms_id), queue))
 
     return jsonify([ReservationQueue.to_json(item) for item in queue]), 200
