@@ -19,7 +19,7 @@ def create_reservation():
     if EmployeeRoleEnum[role] == EmployeeRoleEnum.operator:
         return {"message": "У вас не хватает прав на это"}, 403
 
-    room = Room.query.filter(Room.id == data['room']['id']).first()
+    room = Room.query.filter(Room.id == data['room']).first()
     guest = Guest.query.filter(Guest.telephone == data['guest']['tel']).first()
 
     if guest is None:

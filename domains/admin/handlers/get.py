@@ -34,11 +34,3 @@ def get_telephones():
     result = [guest.telephone for guest in guests if re.fullmatch(phone_pattern, guest.telephone)]
 
     return jsonify({'data': result}), 200
-
-
-def get_logs(reservation_id):
-    logs = UpdateLogs.query.filter(UpdateLogs.reservation_id == reservation_id).all()
-    logs = [UpdateLogs.to_json(log) for log in logs]
-    logs.sort(key=lambda x: datetime.strptime(x['created_at'], '%d-%m-%Y %H:%M:%S'))
-
-    return jsonify(logs)

@@ -11,3 +11,10 @@ references_blueprint = Blueprint('references_blueprint', __name__)
 @check_user_status
 def get_cinemas():
     return handlers.get_cinemas()
+
+
+@references_blueprint.route('/is-authenticated')
+@jwt_required
+@check_user_status
+def is_authenticated():
+    return handlers.is_authenticated()

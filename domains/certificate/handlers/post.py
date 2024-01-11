@@ -16,6 +16,9 @@ def create_certificate():
     guest = Guest.query.filter(Guest.telephone == data["telephone"]).first()
     cinema = Cinema.query.filter(Cinema.id == data["cinema_id"]).first()
 
+    if data["card"] + data["cash"] < data["sum"]:
+        return jsonify({"msg": "Оплата по карте и наличкой меньше, чем сумма сертификата"}), 400
+
     if guest is None:
         guest = Guest(name=data['contact'], telephone=data['telephone'])
         db.session.add(guest)

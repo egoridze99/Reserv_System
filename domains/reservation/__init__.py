@@ -36,3 +36,10 @@ def update_reservation(reservation_id: str):
 @check_user_status
 def create_reservation():
     return handlers.create_reservation()
+
+
+@reservations_blueprint.route("/logs/<reservation_id>")
+@jwt_required
+@check_user_status
+def get_logs(reservation_id):
+    return handlers.get_logs(reservation_id)

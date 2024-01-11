@@ -5,10 +5,10 @@ from flask import request, jsonify
 from flask_jwt_extended import get_jwt_identity
 
 from domains.reservation.handlers.utils import check_not_payment, check_the_taking, get_sum_of_checkouts, \
-    dump_reservation_to_update_log, search_available_items_from_queue
+    dump_reservation_to_update_log, search_available_items_from_queue, validate_payment
 from db import db
 from models import EmployeeRoleEnum, Reservation, Room, Guest, Certificate, CertificateStatusEnum, \
-    ReservationStatusEnum, Checkout, UpdateLogs, User, ReservationQueue, ReservationQueueViewLog
+    ReservationStatusEnum, Checkout, UpdateLogs, User, ReservationQueue, ReservationQueueViewLog, Cinema
 from utils.count_money import count_money
 from utils.parse_json import parse_json
 from typings import UserJwtIdentity
@@ -23,13 +23,12 @@ def update_reservation(reservation_id: str):
     role = identity["role"]
     update_author = identity["name"]
 
-    cinema_id = data["cinema_id"]
-
     if EmployeeRoleEnum[role] == EmployeeRoleEnum.operator:
         return {"message": "У вас не хватает прав на это"}, 403
 
     reservation = Reservation.query.filter(Reservation.id == reservation_id).first()
-    room = Room.query.filter(Room.id == data['room']['id']).first()
+    room = Room.query.filter(Room.id == data['room']).first()
+    cinema = Cinema.query.filter(Cinema.id == room.cinema_id).first()
     guest = Guest.query.filter(Guest.telephone == data['guest']['tel']).first()
 
     user = User.query.filter(User.id == identity["id"]).first()
@@ -60,6 +59,9 @@ def update_reservation(reservation_id: str):
 
     if check_not_payment(role, data, certificate):
         return {"msg": "Клиент не заплатил!"}, 400
+
+    if not validate_payment(role, data, certificate):
+        return {"msg": "Неверные данные об оплате"}, 400
 
     if date < (datetime.now() - timedelta(days=1)).date() \
             and data['status'] != ReservationStatusEnum.finished.name \
@@ -101,7 +103,7 @@ def update_reservation(reservation_id: str):
         if reservation_end_date.time() <= time(8) and reservation.date == reservation_end_date.date():
             cashier_date = reservation_end_date.date() - timedelta(days=1)
 
-        money = count_money(cashier_date, cinema_id, data['rent'], data['cash'], data['card'], sum_of_checkouts)
+        money = count_money(cashier_date, cinema.id, data['rent'], data['cash'], data['card'], sum_of_checkouts)
         if money is None:
             return {"message": "Произошла ошибка. Попробуйте снова"}, 400
         if certificate:

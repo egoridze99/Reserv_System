@@ -22,10 +22,3 @@ def get_common_info():
 def get_telephones():
     return handlers.get_telephones()
 
-
-@admin_blueprint.route("/logs/<reservation_id>")
-@jwt_required
-@check_user_status
-@requires_admin
-def get_logs(reservation_id):
-    return handlers.get_logs(reservation_id)

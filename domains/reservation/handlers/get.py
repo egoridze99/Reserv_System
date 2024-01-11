@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 
 from flask import request, jsonify, json
 
-from models import Reservation, Room, ReservationStatusEnum, Guest
+from models import Reservation, Room, ReservationStatusEnum, Guest, UpdateLogs
 from utils.filter_items_from_another_shift import filter_items_from_another_shift
 
 
@@ -41,8 +41,7 @@ def search_reservations():
         reservation_query = reservation_query.filter(Reservation.status.in_(statuses))
 
     if rooms:
-        rooms_id = [room["id"] for room in json.loads(rooms)]
-        reservation_query = reservation_query.filter(Reservation.room_id.in_(rooms_id))
+        reservation_query = reservation_query.filter(Reservation.room_id.in_(json.loads(rooms)))
 
     if ids:
         ids = json.loads(ids)
@@ -61,3 +60,11 @@ def search_reservations():
     reservations = reservation_query.all()
 
     return jsonify([Reservation.to_json(reservation) for reservation in reservations]), 200
+
+
+def get_logs(reservation_id):
+    logs = UpdateLogs.query.filter(UpdateLogs.reservation_id == reservation_id).all()
+    logs = [UpdateLogs.to_json(log) for log in logs]
+    logs.sort(key=lambda x: datetime.strptime(x['created_at'], '%d-%m-%Y %H:%M:%S'))
+
+    return jsonify(logs)
