@@ -31,6 +31,7 @@ def get_queue():
 def search_in_queue():
     statuses: list[QueueStatusEnum] = request.args.get('status')
     rooms: list[Room] = request.args.get('room')
+    print(rooms)
     ids: list[str] = request.args.get('ids')
     telephones: list[str] = request.args.get('telephones')
     start_date: str = request.args.get('start_date')

@@ -3,7 +3,7 @@ import hashlib
 from flask import request
 
 from db import db
-from models import EmployeeRoleEnum, User
+from models import EmployeeRoleEnum, User, UserStatusEnum
 
 
 def register_user():
@@ -13,7 +13,7 @@ def register_user():
     surname = request.json.get("surname")
     role = request.json.get("role")
 
-    user = User.query.filter(User.login == username).first()
+    user: "User" or None = User.query.filter(User.login == username).first()
 
     if not username:
         return {"msg": "Логин пустой"}, 400
@@ -27,7 +27,7 @@ def register_user():
     if not surname:
         return {"msg": "Фамилия пустая"}, 400
 
-    if user:
+    if user and user.status != UserStatusEnum.deprecated:
         return {"msg": "Такой пользователь уже есть"}, 400
 
     password = hashlib.md5(password.encode()).hexdigest()
