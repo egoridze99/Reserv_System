@@ -5,8 +5,9 @@ from flask import request, jsonify, json
 from flask_jwt_extended import create_access_token, get_jwt_identity
 
 from db import db
-from models import User, EmployeeRoleEnum
+from models import User, EmployeeRoleEnum, UserStatusEnum
 from utils.parse_json import parse_json
+from sqlalchemy import and_
 
 
 def login():
@@ -23,7 +24,7 @@ def login():
     if not password:
         return jsonify({"msg": "Не введен пароль"}), 400
 
-    user = User.query.filter(User.login == username).first()
+    user = User.query.filter(and_(User.login == username, User.status != UserStatusEnum.deprecated)).first()
 
     if not user:
         return jsonify({"msg": "Неверный логин"}), 400
