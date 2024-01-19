@@ -24,7 +24,7 @@ def create_certificate():
         db.session.add(guest)
 
     certificate = Certificate(
-        created_at=datetime.today().strftime("%d-%m-%Y"),
+        created_at=datetime.today().strftime("%d-%m-%Y %H:%M"),
         sum=data["sum"],
         cash=data["cash"],
         card=data["card"],

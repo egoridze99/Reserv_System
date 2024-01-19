@@ -18,7 +18,7 @@ class Reservation(AbstractBaseModel):
     film = db.Column(db.String(170))
     note = db.Column(db.Text)
     author_id = db.Column(db.Integer, db.ForeignKey('user.id', name="author_id"))
-    created_at = db.Column(db.String(10))
+    created_at = db.Column(db.String(16))
     certificate_id = db.Column(db.Integer, db.ForeignKey("certificate.id", name="certificate_id"), unique=True)
     status = db.Column(db.Enum(ReservationStatusEnum), default=ReservationStatusEnum.not_allowed, nullable=False)
     sum_rent = db.Column(db.Integer, default=0)

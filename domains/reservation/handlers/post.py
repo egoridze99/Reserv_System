@@ -60,7 +60,7 @@ def create_reservation():
         guest=guest,
         author=author,
         certificate=certificate,
-        created_at=datetime.today().strftime("%d-%m-%Y")
+        created_at=datetime.today().strftime("%d-%m-%Y %H:%M")
     )
     db.session.add(reservation)
     try:
