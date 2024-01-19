@@ -32,7 +32,6 @@ def create_reservation_in_queue():
         guests_count=data['guests_count'],
         has_another_reservation=data['has_another_reservation'],
         note=data['note'],
-        created_at=datetime.today().strftime("%d-%m-%Y %H:%M"),
         author=author,
         contact=guest,
         rooms=rooms)

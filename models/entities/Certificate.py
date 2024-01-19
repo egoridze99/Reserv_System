@@ -1,4 +1,5 @@
 import shortuuid
+from sqlalchemy import func
 
 from db import db
 from models.abstract import AbstractBaseModel
@@ -12,7 +13,7 @@ from models.enums.CertificateStatusEnum import CertificateStatusEnum
 class Certificate(AbstractBaseModel):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     ident = db.Column(db.String(6), unique=True)
-    created_at = db.Column(db.String(50))
+    created_at = db.Column(db.DateTime, default=func.now())
     author_id = db.Column(db.Integer, db.ForeignKey("user.id", name="author_id"))
     contact_id = db.Column(db.Integer, db.ForeignKey("guest.id", name="contact_id"))
     cinema_id = db.Column(db.Integer, db.ForeignKey('cinema.id', name="cinema_id"))
@@ -35,7 +36,7 @@ class Certificate(AbstractBaseModel):
             "id": certificate.id,
             "ident": certificate.ident,
 
-            "created_at": certificate.created_at,
+            "created_at": certificate.created_at.strftime("%d-%m-%Y %H:%M"),
             "status": certificate.status.name,
             "sum": certificate.sum,
             "cash": certificate.cash,

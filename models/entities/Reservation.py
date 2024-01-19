@@ -1,3 +1,5 @@
+from sqlalchemy import func
+
 from db import db
 from models.enums.UserStatusEnum import UserStatusEnum
 from models.abstract import AbstractBaseModel
@@ -18,7 +20,7 @@ class Reservation(AbstractBaseModel):
     film = db.Column(db.String(170))
     note = db.Column(db.Text)
     author_id = db.Column(db.Integer, db.ForeignKey('user.id', name="author_id"))
-    created_at = db.Column(db.String(16))
+    created_at = db.Column(db.DateTime, default=func.now())
     certificate_id = db.Column(db.Integer, db.ForeignKey("certificate.id", name="certificate_id"), unique=True)
     status = db.Column(db.Enum(ReservationStatusEnum), default=ReservationStatusEnum.not_allowed, nullable=False)
     sum_rent = db.Column(db.Integer, default=0)
@@ -46,7 +48,7 @@ class Reservation(AbstractBaseModel):
             'card': reservation.card,
             'cash': reservation.cash,
             'rent': reservation.sum_rent,
-            'created_at': reservation.created_at,
+            'created_at': reservation.created_at.strftime("%d-%m-%Y %H:%M"),
             "certificate": Certificate.to_json(reservation.certificate) if reservation.certificate else None,
             'guest': {
                 "name": reservation.guest.name,

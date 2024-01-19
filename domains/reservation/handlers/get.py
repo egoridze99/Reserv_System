@@ -65,6 +65,6 @@ def search_reservations():
 def get_logs(reservation_id):
     logs = UpdateLogs.query.filter(UpdateLogs.reservation_id == reservation_id).all()
     logs = [UpdateLogs.to_json(log) for log in logs]
-    logs.sort(key=lambda x: datetime.strptime(x['created_at'], '%d-%m-%Y %H:%M:%S'))
+    logs.sort(key=lambda x: datetime.strptime(x['created_at'], '%d-%m-%Y %H:%M'))
 
     return jsonify(logs)

@@ -135,7 +135,7 @@ def update_reservation(reservation_id: str):
     reservation.checkout = checkouts
     reservation.certificate = certificate
     new_values = dump_reservation_to_update_log(reservation)
-    update_log = UpdateLogs(reservation_id=reservation.id, created_at=datetime.today().strftime("%d-%m-%Y %H:%M:%S"),
+    update_log = UpdateLogs(reservation_id=reservation.id,
                             author=update_author, new=new_values, old=old_values)
 
     try:
