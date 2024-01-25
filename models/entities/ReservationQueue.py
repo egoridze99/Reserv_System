@@ -20,7 +20,7 @@ class ReservationQueue(AbstractBaseModel):
     has_another_reservation = db.Column(db.Boolean, default=False, nullable=False)
     status = db.Column(db.Enum(QueueStatusEnum), default=QueueStatusEnum.active)
     note = db.Column(db.Text)
-    created_at = db.Column(db.DateTime, default=func.now())
+    created_at = db.Column(db.DateTime, default=func.localtimestamp())
     author_id = db.Column(db.Integer, db.ForeignKey("user.id", name="author_id"))
 
     rooms = db.relationship('Room', secondary=queue_room)
