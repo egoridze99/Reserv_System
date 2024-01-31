@@ -38,7 +38,6 @@ def update_reservation(reservation_id: str):
         db.session.add(guest)
 
     checkouts = []
-    date = reservation.date
     new_date = datetime.strptime(f"{data['date']} {data['time']}", '%Y-%m-%d %H:%M')
 
     certificate = None
@@ -63,16 +62,16 @@ def update_reservation(reservation_id: str):
     if not validate_payment(role, data, certificate):
         return {"msg": "Неверные данные об оплате"}, 400
 
-    if date < (datetime.now() - timedelta(days=1)).date() \
+    if reservation.date.date() < (datetime.now() - timedelta(days=1)).date() \
             and data['status'] != ReservationStatusEnum.finished.name \
             and role != EmployeeRoleEnum.root.name:
         return {"msg": "Вы пытаетесь отредактировать старый сеанс!"}, 400
 
-    reservation_end_date = datetime.combine(date, reservation.time) + timedelta(hours=reservation.duration)
+    reservation_end_date = reservation.date + timedelta(hours=reservation.duration)
     if reservation_end_date.date() > datetime.now().date():
         def check_other_constraints(data, role):
             return ReservationStatusEnum[data['status']] == ReservationStatusEnum.finished \
-                   and EmployeeRoleEnum[role] != EmployeeRoleEnum.root
+                and EmployeeRoleEnum[role] != EmployeeRoleEnum.root
 
         if reservation_end_date.date() == (datetime.now() + timedelta(days=1)).date():
             if reservation_end_date.time() > time(8) and check_other_constraints(data, role):
@@ -81,7 +80,7 @@ def update_reservation(reservation_id: str):
             if check_other_constraints(data, role):
                 return {"msg": "Как может завершиться сеанс в будещем?)"}, 400
 
-    if check_the_taking(new_date.date(), room, new_date.time(), float(data['duration']), reservation.id):
+    if check_the_taking(new_date, room, float(data['duration']), reservation.id):
         return {"msg": "Зал занят"}, 400
 
     for check in data['checkouts']:
@@ -96,14 +95,14 @@ def update_reservation(reservation_id: str):
 
     if data['status'] == ReservationStatusEnum.finished.name:
         sum_of_checkouts = get_sum_of_checkouts(checkouts)
-        reservation_end_date = datetime.combine(reservation.date, reservation.time) + \
-                               timedelta(hours=reservation.duration)
+        reservation_end_date = reservation.date + timedelta(hours=reservation.duration)
 
-        cashier_date = reservation.date
-        if reservation_end_date.time() <= time(8) and reservation.date == reservation_end_date.date():
+        cashier_date = reservation.date.date()
+        if reservation_end_date.time() <= time(8) and reservation.date.date() == reservation_end_date.date():
             cashier_date = reservation_end_date.date() - timedelta(days=1)
 
         money = count_money(cashier_date, cinema.id, data['rent'], data['cash'], data['card'], sum_of_checkouts)
+
         if money is None:
             return {"message": "Произошла ошибка. Попробуйте снова"}, 400
         if certificate:
@@ -120,8 +119,7 @@ def update_reservation(reservation_id: str):
             db.session.add(queue_item)
 
     old_values = dump_reservation_to_update_log(reservation)
-    reservation.date = new_date.date()
-    reservation.time = new_date.time()
+    reservation.date = new_date
     reservation.duration = data['duration']
     reservation.count = data['count']
     reservation.film = data['film']
@@ -134,6 +132,7 @@ def update_reservation(reservation_id: str):
     reservation.guest = guest
     reservation.checkout = checkouts
     reservation.certificate = certificate
+
     new_values = dump_reservation_to_update_log(reservation)
     update_log = UpdateLogs(reservation_id=reservation.id,
                             author=update_author, new=new_values, old=old_values)

@@ -19,7 +19,7 @@ class UpdateLogs(AbstractBaseModel):
     def to_json(self):
         return {
             "id": self.id,
-            "created_at": self.created_at.strftime("%d-%m-%Y %H:%M"),
+            "created_at": self.created_at,
             "author": self.author,
             "old": json.loads(self.old),
             "new": json.loads(self.new)

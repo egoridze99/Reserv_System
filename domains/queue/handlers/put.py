@@ -1,6 +1,6 @@
-from datetime import datetime
+from datetime import datetime, timedelta, time
 
-from flask import request, abort
+from flask import request
 
 from db import db
 from models import Guest, ReservationQueue, Room, QueueStatusEnum
@@ -25,9 +25,18 @@ def edit_queue_item(id: int):
     start_time = datetime.strptime(data['start_time'], '%H:%M').time()
     end_time = datetime.strptime(data["end_time"], '%H:%M').time() if data["end_time"] else None
 
-    queue_item.date = date
-    queue_item.start_time = start_time
-    queue_item.end_time = end_time
+    start_date = datetime.combine(date, start_time)
+    end_date = None
+
+    if end_time:
+        if start_time > end_time > time(8):
+            return {"msg": "Неверный временной диапазон"}, 400
+
+        end_date = date + timedelta(days=1) if end_time < start_time else date
+        end_date = datetime.combine(end_date, end_time)
+
+    queue_item.start_date = start_date
+    queue_item.end_date = end_date
     queue_item.duration = data["duration"]
     queue_item.guests_count = data["guests_count"]
     queue_item.has_another_reservation = data["has_another_reservation"]

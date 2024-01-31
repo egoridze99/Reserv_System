@@ -1,5 +1,7 @@
 from datetime import datetime, timedelta
 
+from sqlalchemy import select, func
+
 from db import db
 from models.abstract import AbstractBaseModel
 from models.entities.Cinema import Cinema
@@ -7,7 +9,7 @@ from models.entities.Cinema import Cinema
 
 class Money(AbstractBaseModel):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    date = db.Column(db.Date, nullable=False, default=datetime.now().date())
+    date = db.Column(db.Date, nullable=False, default=func.date(func.localtimestamp()))
     income = db.Column(db.Integer, nullable=False, default=0)
     expense = db.Column(db.Integer, nullable=False, default=0)
     proceeds = db.Column(db.Integer, nullable=False, default=0)
@@ -24,7 +26,17 @@ class Money(AbstractBaseModel):
             cinema_id = kwargs['cinema_id']
             previous_day = date - timedelta(days=1)
 
+            if db.session.query(Money).count() == 0:
+                cls.cashier_start = 0
+                return
+
+            min_date = db.session.query(func.min(Money.date)).one()[0]
+
             while True:
+                if previous_day < min_date:
+                    cls.cashier_start = 0
+                    return
+
                 previous_day_money_object = Money.query.filter(Money.cinema_id == cinema_id).filter(
                     str(previous_day) == Money.date).first()
 

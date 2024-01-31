@@ -1,9 +1,10 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, time
 
 from flask import request, jsonify, json
+from sqlalchemy import func, and_, text, String
+from sqlalchemy.sql.elements import Cast
 
 from models import Reservation, Room, ReservationStatusEnum, Guest, UpdateLogs
-from utils.filter_items_from_another_shift import filter_items_from_another_shift
 
 
 def get_reservations():
@@ -14,14 +15,19 @@ def get_reservations():
     if not date or not cinema_id:
         return {"message": "Не все данные"}, 400
 
-    reservations = Reservation.query.join(Room).filter(Reservation.date.in_([date, date + timedelta(days=1)]))
+    reservations = Reservation.query.join(Room).filter(
+        ((func.date(Reservation.date) == date) & (
+                func.datetime(Reservation.date, "+" + Cast(Reservation.duration, String) + " hours") > datetime.combine(
+            date, time(8)))) |
+        (func.time(Reservation.date, "+" + Cast(Reservation.duration, String) + " hours") <= time(8)) & (
+                date + timedelta(days=1) == func.date(Reservation.date))
+
+    )
 
     if not room_id:
         reservations = reservations.filter(Room.cinema_id == cinema_id).all()
     else:
         reservations = reservations.filter(Room.id == room_id).all()
-
-    reservations = filter(lambda x: filter_items_from_another_shift(x, date), reservations)
 
     return jsonify([Reservation.to_json(reservation) for reservation in reservations]), 200
 
@@ -52,10 +58,12 @@ def search_reservations():
         reservation_query = reservation_query.filter(Guest.telephone.in_(telephones))
 
     if start_date:
-        reservation_query = reservation_query.filter(Reservation.date >= start_date)
+        start_date_as_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+        reservation_query = reservation_query.filter(func.date(Reservation.date) >= start_date_as_date)
 
     if end_date:
-        reservation_query = reservation_query.filter(Reservation.date <= end_date)
+        end_date_as_date = datetime.strptime(end_date, '%Y-%m-%d')
+        reservation_query = reservation_query.filter(func.date(Reservation.date) <= end_date_as_date)
 
     reservations = reservation_query.all()
 
@@ -65,6 +73,6 @@ def search_reservations():
 def get_logs(reservation_id):
     logs = UpdateLogs.query.filter(UpdateLogs.reservation_id == reservation_id).all()
     logs = [UpdateLogs.to_json(log) for log in logs]
-    logs.sort(key=lambda x: datetime.strptime(x['created_at'], '%d-%m-%Y %H:%M'))
+    logs.sort(key=lambda x: x['created_at'])
 
     return jsonify(logs)

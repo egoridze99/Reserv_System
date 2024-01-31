@@ -6,7 +6,7 @@ from models import Reservation, Checkout
 
 def dump_reservation_to_update_log(reservation: 'Reservation'):
     return json.dumps({
-        "time": str(reservation.time)[:-3],
+        "date": reservation.date.strftime("%d-%m-%Y %H:%M"),
         "room": reservation.room.name,
         "duration": reservation.duration,
         "count": reservation.count,

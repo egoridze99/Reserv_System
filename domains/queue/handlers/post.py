@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, time, timedelta
 
 from flask import request, jsonify
 from flask_jwt_extended import get_jwt_identity
@@ -21,20 +21,31 @@ def create_reservation_in_queue():
         db.session.add(guest)
 
     date = datetime.strptime(data['date'], '%Y-%m-%d').date()
+
     start_time = datetime.strptime(data['start_time'], '%H:%M').time()
     end_time = datetime.strptime(data["end_time"], '%H:%M').time() if data["end_time"] else None
 
+    start_date = datetime.combine(date, start_time)
+    end_date = None
+
+    if end_time:
+        if start_time > end_time > time(8):
+            return {"msg": "Неверный временной диапазон"}, 400
+
+        end_date = date + timedelta(days=1) if end_time < start_time else date
+        end_date = datetime.combine(end_date, end_time)
+
     queue_item = ReservationQueue(
-        date=date,
-        start_time=start_time,
-        end_time=end_time,
+        start_date=start_date,
+        end_date=end_date,
         duration=data['duration'],
         guests_count=data['guests_count'],
         has_another_reservation=data['has_another_reservation'],
         note=data['note'],
         author=author,
         contact=guest,
-        rooms=rooms)
+        rooms=rooms
+    )
 
     db.session.add(queue_item)
     db.session.commit()

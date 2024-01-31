@@ -11,8 +11,7 @@ from models.enums.ReservationStatusEnum import ReservationStatusEnum
 
 class Reservation(AbstractBaseModel):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    date = db.Column(db.Date, nullable=False)
-    time = db.Column(db.Time, nullable=False)
+    date = db.Column(db.DateTime, nullable=False)
     duration = db.Column(db.Integer, nullable=False)
     count = db.Column(db.Integer)  # Кол-во гостей
     room_id = db.Column(db.Integer, db.ForeignKey('room.id', name="room_id"))
@@ -27,7 +26,7 @@ class Reservation(AbstractBaseModel):
     card = db.Column(db.Integer, default=0)
     cash = db.Column(db.Integer, default=0)
 
-    checkout = db.relationship('Checkout', secondary=checkout_reservation)
+    checkout = db.relationship('Checkout', secondary=checkout_reservation, cascade="all, delete")
 
     @staticmethod
     def to_json(reservation: 'Reservation'):
@@ -35,7 +34,6 @@ class Reservation(AbstractBaseModel):
             'id': reservation.id,
             'date': reservation.date,
             'room': {"id": reservation.room.id, "name": reservation.room.name},
-            'time': str(reservation.time)[:-3],
             'duration': reservation.duration,
             'count': reservation.count,
             'film': reservation.film,
@@ -48,7 +46,7 @@ class Reservation(AbstractBaseModel):
             'card': reservation.card,
             'cash': reservation.cash,
             'rent': reservation.sum_rent,
-            'created_at': reservation.created_at.strftime("%d-%m-%Y %H:%M"),
+            'created_at': reservation.created_at,
             "certificate": Certificate.to_json(reservation.certificate) if reservation.certificate else None,
             'guest': {
                 "name": reservation.guest.name,

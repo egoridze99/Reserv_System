@@ -11,9 +11,8 @@ from models.enums.QueueStatusEnum import QueueStatusEnum
 
 class ReservationQueue(AbstractBaseModel):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    date = db.Column(db.Date, nullable=False)
-    start_time = db.Column(db.Time, nullable=False)
-    end_time = db.Column(db.Time, nullable=True)
+    start_date = db.Column(db.DateTime)
+    end_date = db.Column(db.DateTime)
     duration = db.Column(db.Integer, nullable=False)
     contact_id = db.Column(db.Integer, db.ForeignKey("guest.id", name="contact_id"))
     guests_count = db.Column(db.Integer, nullable=False)
@@ -30,20 +29,19 @@ class ReservationQueue(AbstractBaseModel):
     def to_json(reservation: 'ReservationQueue'):
         return {
             'id': reservation.id,
-            'date': reservation.date,
-            'start_time': str(reservation.start_time)[:-3],
-            'end_time': str(reservation.end_time)[:-3] if reservation.end_time else None,
+            'start_date': reservation.start_date,
+            'end_date': reservation.end_date if reservation.end_date else None,
             'has_another_reservation': reservation.has_another_reservation,
             'duration': reservation.duration,
             'guests_count': reservation.guests_count,
             'status': reservation.status.value,
             'note': reservation.note,
-            'created_at': reservation.created_at.strftime("%d-%m-%Y %H:%M"),
+            'created_at': reservation.created_at,
             'author': User.to_json(reservation.author),
             'rooms': [Room.to_json(room) for room in reservation.rooms],
             'contact': Guest.to_json(reservation.contact),
             'view_by': [{"reservation_id": log.reservation.id,
                          "user": User.to_json(log.user),
-                         "created_at": str(log.created_at)[:8:]
+                         "created_at": log.created_at
                          } for log in reservation.view_logs]
         }

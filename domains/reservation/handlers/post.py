@@ -26,13 +26,12 @@ def create_reservation():
         guest = Guest(name=data['guest']['name'], telephone=data['guest']['tel'])
         db.session.add(guest)
 
-    date = datetime.strptime(data['date'], '%Y-%m-%d').date()
-    time = datetime.strptime(data['time'], '%H:%M').time()
+    date = datetime.strptime(f"{data['date']} {data['time']}", "%Y-%m-%d %H:%M")
 
-    if check_the_taking(date, room, time, float(data['duration'])):
+    if check_the_taking(date, room, float(data['duration'])):
         return {"msg": "Зал занят"}, 400
 
-    if is_date_in_last(date):
+    if is_date_in_last(date.date()):
         return {"msg": "Дата уже прошла"}, 400
 
     certificate = None
@@ -49,7 +48,6 @@ def create_reservation():
     author = User.query.filter(User.id == int(identity["id"])).first()
 
     reservation = Reservation(
-        time=time,
         date=date,
         duration=data['duration'],
         count=data['count'],
@@ -62,8 +60,8 @@ def create_reservation():
         certificate=certificate,
     )
     db.session.add(reservation)
-    try:
-        db.session.commit()
-        return {"msg": "ok"}, 201
-    except Exception:
-        return {"msg": "error"}, 400
+    # try:
+    db.session.commit()
+    return {"msg": "ok"}, 201
+    # except Exception:
+    #     return {"msg": "error"}, 400
