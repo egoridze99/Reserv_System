@@ -17,20 +17,34 @@ def get_queue():
     if not date:
         return {"message": "Не все данные"}, 400
 
-    queue = ReservationQueue.query.join(queue_room).join(Room).filter(
-        ((func.date(ReservationQueue.start_date) == date) & (
-                func.datetime(ReservationQueue.start_date,
-                              "+" + Cast(ReservationQueue.duration, String) + " hours") > datetime.combine(date,
-                                                                                                           time(8)))) |
-        (func.time(
-            func.IIF(ReservationQueue.end_date, ReservationQueue.end_date, ReservationQueue.start_date),
-            "+" + Cast(ReservationQueue.duration, String) + " hours") <= time(
-            8)) & (
-                date + timedelta(days=1) == func.date(
-            func.IIF(ReservationQueue.end_date, ReservationQueue.end_date, ReservationQueue.start_date))
+    queue = ReservationQueue\
+        .query\
+        .join(queue_room)\
+        .join(Room)\
+        .filter(
+            (
+                (func.date(ReservationQueue.start_date) == date) & (
+                func.datetime(
+                        ReservationQueue.start_date,
+                        "+" + Cast(ReservationQueue.duration, String) + " hours"
+                ) > datetime.combine(date, time(8)))) |
+                (func.datetime(
+                    func.IIF(
+                        ReservationQueue.end_date,
+                        ReservationQueue.end_date,
+                        ReservationQueue.start_date
+                    ),
+                    "+" + Cast(ReservationQueue.duration, String) + " hours"
+                ) <= datetime.combine(date + timedelta(days=1), time(8))) &
+                (date + timedelta(days=1) == func.date(
+                func.IIF(
+                    ReservationQueue.end_date,
+                    ReservationQueue.end_date,
+                    ReservationQueue.start_date
+                    )
+                )
+            )
         )
-
-    )
 
     # Я хз как через алхимию такой фильтр сделать, фильтрую силами питона
     if not room_id:

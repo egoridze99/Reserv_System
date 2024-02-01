@@ -1,5 +1,7 @@
 from datetime import datetime, timedelta
 
+from sqlalchemy import func
+
 from models import Reservation, ReservationStatusEnum, Room
 
 
@@ -9,7 +11,7 @@ def check_the_taking(date: datetime, room: Room, duration: float, reservation_id
 
     reservations = Reservation \
         .query \
-        .filter(Reservation.date.in_([date - timedelta(days=1), date, date + timedelta(days=1)])) \
+        .filter(func.date(Reservation.date).in_([date.date() - timedelta(days=1), date.date(), date.date() + timedelta(days=1)])) \
         .filter(Reservation.room == room) \
         .all()
 

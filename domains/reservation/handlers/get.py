@@ -16,12 +16,19 @@ def get_reservations():
         return {"message": "Не все данные"}, 400
 
     reservations = Reservation.query.join(Room).filter(
-        ((func.date(Reservation.date) == date) & (
-                func.datetime(Reservation.date, "+" + Cast(Reservation.duration, String) + " hours") > datetime.combine(
-            date, time(8)))) |
-        (func.time(Reservation.date, "+" + Cast(Reservation.duration, String) + " hours") <= time(8)) & (
-                date + timedelta(days=1) == func.date(Reservation.date))
-
+        (
+            (func.date(Reservation.date) == date) & (
+            func.datetime(
+                Reservation.date,
+                "+" + Cast(Reservation.duration, String) + " hours"
+            ) > datetime.combine(date, time(8)))
+        ) |
+        (
+            func.datetime(
+                Reservation.date,
+                "+" + Cast(Reservation.duration, String) + " hours"
+            ) <= datetime.combine(date + timedelta(days=1), time(8))) & (
+            date + timedelta(days=1) == func.date(Reservation.date))
     )
 
     if not room_id:
