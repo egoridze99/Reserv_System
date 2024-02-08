@@ -29,19 +29,19 @@ class ReservationQueue(AbstractBaseModel):
     def to_json(reservation: 'ReservationQueue'):
         return {
             'id': reservation.id,
-            'start_date': reservation.start_date,
-            'end_date': reservation.end_date if reservation.end_date else None,
+            'start_date': reservation.start_date.strftime('%Y-%m-%dT%H:%M'),
+            'end_date': reservation.end_date.strftime('%Y-%m-%dT%H:%M') if reservation.end_date else None,
             'has_another_reservation': reservation.has_another_reservation,
             'duration': reservation.duration,
             'guests_count': reservation.guests_count,
             'status': reservation.status.value,
             'note': reservation.note,
-            'created_at': reservation.created_at,
+            'created_at': reservation.created_at.strftime('%Y-%m-%dT%H:%M'),
             'author': User.to_json(reservation.author),
             'rooms': [Room.to_json(room) for room in reservation.rooms],
             'contact': Guest.to_json(reservation.contact),
             'view_by': [{"reservation_id": log.reservation.id,
                          "user": User.to_json(log.user),
-                         "created_at": log.created_at
+                         "created_at": log.created_at.strftime('%Y-%m-%dT%H:%M')
                          } for log in reservation.view_logs]
         }

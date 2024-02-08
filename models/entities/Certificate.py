@@ -36,7 +36,7 @@ class Certificate(AbstractBaseModel):
             "id": certificate.id,
             "ident": certificate.ident,
 
-            "created_at": certificate.created_at,
+            "created_at": certificate.created_at.strftime('%Y-%m-%dT%H:%M'),
             "status": certificate.status.name,
             "sum": certificate.sum,
             "cash": certificate.cash,

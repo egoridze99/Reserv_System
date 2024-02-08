@@ -62,7 +62,7 @@ class Money(AbstractBaseModel):
     def to_json(money: 'Money'):
         return {
             "id": money.id,
-            "date": money.date,
+            "date": money.date.strftime('%Y-%m-%d'),
             "income": money.income,
             "expense": money.expense,
             "proceeds": money.proceeds,

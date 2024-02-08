@@ -32,7 +32,7 @@ class Reservation(AbstractBaseModel):
     def to_json(reservation: 'Reservation'):
         return {
             'id': reservation.id,
-            'date': reservation.date,
+            'date': reservation.date.strftime('%Y-%m-%dT%H:%M'),
             'room': {"id": reservation.room.id, "name": reservation.room.name},
             'duration': reservation.duration,
             'count': reservation.count,
@@ -40,13 +40,13 @@ class Reservation(AbstractBaseModel):
             'author': {"fullname": f"{reservation.author.name} {reservation.author.surname}" \
                 if reservation.author is not None else "Кривой юзер",
                        "status": reservation.author.status.name \
-                if reservation.author is not None else UserStatusEnum.deprecated.name},
+                           if reservation.author is not None else UserStatusEnum.deprecated.name},
             'note': reservation.note,
             'status': reservation.status.name,
             'card': reservation.card,
             'cash': reservation.cash,
             'rent': reservation.sum_rent,
-            'created_at': reservation.created_at,
+            'created_at': reservation.created_at.strftime('%Y-%m-%dT%H:%M'),
             "certificate": Certificate.to_json(reservation.certificate) if reservation.certificate else None,
             'guest': {
                 "name": reservation.guest.name,
