@@ -1,6 +1,7 @@
 from sqlalchemy import func
 
 from db import db
+from models.entities.Guest import Guest
 from models.enums.UserStatusEnum import UserStatusEnum
 from models.abstract import AbstractBaseModel
 from models.dictionaries import checkout_reservation
@@ -48,10 +49,7 @@ class Reservation(AbstractBaseModel):
             'rent': reservation.sum_rent,
             'created_at': reservation.created_at.strftime('%Y-%m-%dT%H:%M'),
             "certificate": Certificate.to_json(reservation.certificate) if reservation.certificate else None,
-            'guest': {
-                "name": reservation.guest.name,
-                "tel": reservation.guest.telephone
-            },
+            'guest': Guest.to_json(reservation.guest),
             'checkouts': [Checkout.to_json(checkout) for checkout in reservation.checkout]
         }
 

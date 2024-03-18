@@ -29,13 +29,9 @@ def update_reservation(reservation_id: str):
     reservation = Reservation.query.filter(Reservation.id == reservation_id).first()
     room = Room.query.filter(Room.id == data['room']).first()
     cinema = Cinema.query.filter(Cinema.id == room.cinema_id).first()
-    guest = Guest.query.filter(Guest.telephone == data['guest']['tel']).first()
+    guest = Guest.query.filter(Guest.id == data['guest']).first()
 
     user = User.query.filter(User.id == identity["id"]).first()
-
-    if guest is None:
-        guest = Guest(name=data['guest']['name'], telephone=data['guest']['tel'])
-        db.session.add(guest)
 
     checkouts = []
     new_date = datetime.strptime(f"{data['date']} {data['time']}", '%Y-%m-%d %H:%M')
@@ -118,7 +114,7 @@ def update_reservation(reservation_id: str):
             queue_item.view_logs.append(log_item)
             db.session.add(queue_item)
 
-    old_values = dump_reservation_to_update_log(reservation)
+    old_values = dump_reservation_to_update_log(reservation, reservation.guest)
     reservation.date = new_date
     reservation.duration = data['duration']
     reservation.count = data['count']
@@ -133,7 +129,7 @@ def update_reservation(reservation_id: str):
     reservation.checkout = checkouts
     reservation.certificate = certificate
 
-    new_values = dump_reservation_to_update_log(reservation)
+    new_values = dump_reservation_to_update_log(reservation, guest)
     update_log = UpdateLogs(reservation_id=reservation.id,
                             author=update_author, new=new_values, old=old_values)
 

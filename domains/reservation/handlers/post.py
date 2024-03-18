@@ -20,12 +20,7 @@ def create_reservation():
         return {"message": "У вас не хватает прав на это"}, 403
 
     room = Room.query.filter(Room.id == data['room']).first()
-    guest = Guest.query.filter(Guest.telephone == data['guest']['tel']).first()
-
-    if guest is None:
-        guest = Guest(name=data['guest']['name'], telephone=data['guest']['tel'])
-        db.session.add(guest)
-
+    guest = Guest.query.filter(Guest.id == data['guest']).first()
     date = datetime.strptime(f"{data['date']} {data['time']}", "%Y-%m-%d %H:%M")
 
     if check_the_taking(date, room, float(data['duration'])):
@@ -60,8 +55,9 @@ def create_reservation():
         certificate=certificate,
     )
     db.session.add(reservation)
-    # try:
-    db.session.commit()
-    return {"msg": "ok"}, 201
-    # except Exception:
-    #     return {"msg": "error"}, 400
+    
+    try:
+        db.session.commit()
+        return {"msg": "ok"}, 201
+    except Exception:
+        return {"msg": "error"}, 400

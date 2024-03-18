@@ -6,3 +6,4 @@ from domains.queue import queue_blueprint
 from domains.base import base_blueprint
 from domains.admin import admin_blueprint
 from domains.user import user_blueprint
+from domains.customer import customer_blueprint

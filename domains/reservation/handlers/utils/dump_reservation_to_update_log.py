@@ -1,10 +1,9 @@
 import json
-from typing import List
 
-from models import Reservation, Checkout
+from models import Reservation, Guest
 
 
-def dump_reservation_to_update_log(reservation: 'Reservation'):
+def dump_reservation_to_update_log(reservation: 'Reservation', guest: 'Guest'):
     return json.dumps({
         "date": reservation.date.strftime("%d-%m-%Y %H:%M"),
         "room": reservation.room.name,
@@ -16,8 +15,8 @@ def dump_reservation_to_update_log(reservation: 'Reservation'):
         "sum_rent": reservation.sum_rent,
         "card": reservation.card,
         "cash": reservation.cash,
-        "guest_name": reservation.guest.name,
-        "guest_telephone": reservation.guest.telephone,
+        "guest_name": guest.name,
+        "guest_telephone": guest.telephone,
         "certificate_ident": reservation.certificate.ident if reservation.certificate else None,
         "checkouts": [{"description": item.description, "sum": item.sum} for item in reservation.checkout]
     })

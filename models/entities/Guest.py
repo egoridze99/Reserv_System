@@ -1,8 +1,10 @@
 from models.abstract import AbstractBaseModel
 from db import db
 
+
 class Guest(AbstractBaseModel):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+
     name = db.Column(db.String(40), nullable=False)
     telephone = db.Column(db.String(30), nullable=False)
 

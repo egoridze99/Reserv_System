@@ -12,7 +12,7 @@ from flask_sqlalchemy import SQLAlchemy
 from config import Config
 
 from domains import references_blueprint, reservations_blueprint, money_blueprint, certificate_blueprint, \
-    queue_blueprint, base_blueprint, admin_blueprint, user_blueprint
+    queue_blueprint, base_blueprint, admin_blueprint, user_blueprint, customer_blueprint
 
 from db import db
 from scheduler_jobs import expired_queue_item_cleaner
@@ -53,6 +53,7 @@ def create_app():
     flask_app.register_blueprint(queue_blueprint, url_prefix='/api/queue')
     flask_app.register_blueprint(admin_blueprint, url_prefix='/api/admin')
     flask_app.register_blueprint(user_blueprint, url_prefix='/api/user')
+    flask_app.register_blueprint(customer_blueprint, url_prefix='/api/customer')
 
     # CONFIGURING ADMIN PANEL
     admin_panel = Admin(flask_app, name='film_is_scheduler', template_mode='bootstrap3', url="/flask_admin_panel")
