@@ -15,3 +15,10 @@ def get_users():
     telephone = args.get('telephone')
 
     return handlers.get_customer(telephone)
+
+
+@customer_blueprint.route('', methods=['POST'])
+@jwt_required
+@check_user_status
+def add_customer():
+    return handlers.create_customer()
