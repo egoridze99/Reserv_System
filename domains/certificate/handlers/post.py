@@ -13,15 +13,14 @@ def create_certificate():
     data = parse_json(request.data)
 
     author = User.query.filter(User.id == get_jwt_identity()["id"]).first()
-    guest = Guest.query.filter(Guest.telephone == data["telephone"]).first()
+    guest = Guest.query.filter(Guest.id == data["contact"]).first()
     cinema = Cinema.query.filter(Cinema.id == data["cinema_id"]).first()
+
+    if guest is None:
+        return {"msg": "Пользователь не найден"}, 400
 
     if data["card"] + data["cash"] < data["sum"]:
         return jsonify({"msg": "Оплата по карте и наличкой меньше, чем сумма сертификата"}), 400
-
-    if guest is None:
-        guest = Guest(name=data['contact'], telephone=data['telephone'])
-        db.session.add(guest)
 
     certificate = Certificate(
         sum=data["sum"],

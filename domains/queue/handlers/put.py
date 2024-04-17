@@ -16,10 +16,10 @@ def edit_queue_item(id: int):
         return {"msg": "Элемента с таким id не найдено в очереди"}, 404
 
     rooms = Room.query.filter(Room.id.in_(data['rooms'])).all()
-    contact = Guest.query.filter(Guest.telephone == data['telephone']).first()
+    contact = Guest.query.filter(Guest.id == data['contact']).first()
+
     if contact is None:
-        contact = Guest(name=data['contact'], telephone=data['telephone'])
-        db.session.add(contact)
+        return {"msg": "Пользователь не найден"}, 400
 
     date = datetime.strptime(f"{data['date']}", '%Y-%m-%d')
     start_time = datetime.strptime(data['start_time'], '%H:%M').time()

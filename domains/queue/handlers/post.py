@@ -13,12 +13,11 @@ def create_reservation_in_queue():
 
     data = parse_json(request.data)
     author = User.query.filter(User.id == get_jwt_identity()["id"]).first()
-    guest = Guest.query.filter(Guest.telephone == data["telephone"]).first()
+    guest = Guest.query.filter(Guest.id == data["contact"]).first()
     rooms = Room.query.filter(Room.id.in_(data['rooms'])).all()
 
     if guest is None:
-        guest = Guest(name=data['contact'], telephone=data['telephone'])
-        db.session.add(guest)
+        return {"msg", "Пользователь не найден"}, 400
 
     date = datetime.strptime(data['date'], '%Y-%m-%d').date()
 

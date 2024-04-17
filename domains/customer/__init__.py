@@ -22,3 +22,11 @@ def get_users():
 @check_user_status
 def add_customer():
     return handlers.create_customer()
+
+
+@customer_blueprint.route('/<id>', methods=['PUT'])
+@jwt_required
+@check_user_status
+def edit_customer(id: str):
+    id = int(id)
+    return handlers.edit_customer(id)

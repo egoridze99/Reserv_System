@@ -47,7 +47,8 @@ class Reservation(AbstractBaseModel):
             'card': reservation.card,
             'cash': reservation.cash,
             'rent': reservation.sum_rent,
-            'created_at': reservation.created_at.strftime('%Y-%m-%dT%H:%M'),
+            'created_at': reservation.created_at.strftime(
+                '%Y-%m-%dT%H:%M') if reservation.created_at is not None else None,
             "certificate": Certificate.to_json(reservation.certificate) if reservation.certificate else None,
             'guest': Guest.to_json(reservation.guest),
             'checkouts': [Checkout.to_json(checkout) for checkout in reservation.checkout]

@@ -1,5 +1,6 @@
 from models.abstract import AbstractBaseModel
 from db import db
+from models.enums import GenderEnum
 
 
 class Guest(AbstractBaseModel):
@@ -8,6 +9,7 @@ class Guest(AbstractBaseModel):
     name = db.Column(db.String(40), nullable=False)
     telephone = db.Column(db.String(30), nullable=False)
 
+    gender = db.Column(db.Enum(GenderEnum), default=GenderEnum.М)
     surname = db.Column(db.String(100), nullable=True)
     patronymic = db.Column(db.String(100), nullable=True)
     birthday_date = db.Column(db.Date, nullable=True)
@@ -29,5 +31,15 @@ class Guest(AbstractBaseModel):
         return {
             "id": guest.id,
             "name": guest.name,
-            "telephone": guest.telephone
+            "telephone": guest.telephone,
+
+            "gender": guest.gender.name if guest.gender is not None else None,
+            "surname": guest.surname,
+            "patronymic": guest.patronymic,
+            "birthday_date": guest.birthday_date,
+            "birthplace": guest.birthplace,
+            "passport_issued_by": guest.passport_issued_by,
+            "passport_issue_date": guest.passport_issue_date,
+            "department_code": guest.department_code,
+            "passport_identity": guest.passport_identity,
         }
