@@ -1,5 +1,6 @@
 from models.abstract import AbstractBaseModel
 from db import db
+from models.dictionaries import guest_comment_dict
 from models.enums import GenderEnum
 
 
@@ -22,6 +23,8 @@ class Guest(AbstractBaseModel):
     reservation = db.relationship("Reservation", backref='guest')
     certificate = db.relationship("Certificate", backref='contact')
     queue = db.relationship("ReservationQueue", backref='contact')
+
+    comments = db.relationship('GuestComment', secondary=guest_comment_dict, cascade="all, delete")
 
     def __str__(self):
         return "<Гость id = {} Имя = {} Номер = {}>".format(self.id, self.name, self.telephone)

@@ -17,6 +17,16 @@ def get_users():
     return handlers.get_customer(telephone)
 
 
+@customer_blueprint.route('/comments/<id>')
+@jwt_required
+@check_user_status
+def get_comments(id):
+    if id is None:
+        return {"msg": "id посетителя некорректен"}
+
+    return handlers.get_customer_comments(int(id))
+
+
 @customer_blueprint.route('', methods=['POST'])
 @jwt_required
 @check_user_status
@@ -30,3 +40,10 @@ def add_customer():
 def edit_customer(id: str):
     id = int(id)
     return handlers.edit_customer(id)
+
+
+@customer_blueprint.route('/comments', methods=['PUT'])
+@jwt_required
+@check_user_status
+def add_comment():
+    return handlers.add_comment_to_customer()

@@ -21,3 +21,15 @@ def get_customer(telephone: Optional[str]):
         return jsonify([Guest.to_json(customer) for customer in all_customers])
 
     return jsonify([Guest.to_json(customer) for customer in Guest.query.limit(100).all()])
+
+
+def get_customer_comments(customer_id):
+    customer = Guest.query.filter(Guest.id == customer_id).first()
+
+    if customer is None:
+        return {"msg": "Посетитель не найден"}, 400
+
+    comments = [c.to_json(c) for c in customer.comments]
+    comments.reverse()
+
+    return jsonify(comments), 200
