@@ -27,6 +27,16 @@ def get_comments(id):
     return handlers.get_customer_comments(int(id))
 
 
+@customer_blueprint.route('/logs')
+@jwt_required
+@check_user_status
+def get_logs():
+    args = request.args
+    customer_id = int(args.get('customer_id'))
+
+    return handlers.get_logs(customer_id)
+
+
 @customer_blueprint.route('', methods=['POST'])
 @jwt_required
 @check_user_status

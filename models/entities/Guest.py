@@ -10,7 +10,7 @@ class Guest(AbstractBaseModel):
     name = db.Column(db.String(40), nullable=False)
     telephone = db.Column(db.String(30), nullable=False)
 
-    gender = db.Column(db.Enum(GenderEnum), default=GenderEnum.М)
+    gender = db.Column(db.Enum(GenderEnum))
     surname = db.Column(db.String(100), nullable=True)
     patronymic = db.Column(db.String(100), nullable=True)
     birthday_date = db.Column(db.Date, nullable=True)
@@ -39,10 +39,11 @@ class Guest(AbstractBaseModel):
             "gender": guest.gender.name if guest.gender is not None else None,
             "surname": guest.surname,
             "patronymic": guest.patronymic,
-            "birthday_date": guest.birthday_date,
+            "birthday_date": guest.birthday_date.strftime("%Y-%m-%d") if guest.birthday_date is not None else None,
             "birthplace": guest.birthplace,
             "passport_issued_by": guest.passport_issued_by,
-            "passport_issue_date": guest.passport_issue_date,
+            "passport_issue_date": guest.passport_issue_date.strftime(
+                "%Y-%m-%d") if guest.passport_issue_date is not None else None,
             "department_code": guest.department_code,
             "passport_identity": guest.passport_identity,
         }

@@ -2,7 +2,7 @@ from typing import Optional
 
 from flask import jsonify
 
-from models import Guest
+from models import Guest, GuestChangesLogs
 
 
 def get_customer(telephone: Optional[str]):
@@ -33,3 +33,11 @@ def get_customer_comments(customer_id):
     comments.reverse()
 
     return jsonify(comments), 200
+
+
+def get_logs(customer_id: int):
+    logs = GuestChangesLogs.query.filter(GuestChangesLogs.guest_id == customer_id).all()
+    logs = [GuestChangesLogs.to_json(log) for log in logs]
+    logs.sort(key=lambda x: x['created_at'])
+
+    return jsonify(logs)

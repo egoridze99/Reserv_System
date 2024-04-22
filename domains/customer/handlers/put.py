@@ -1,14 +1,17 @@
+import json
+
 from flask import request
 from flask_jwt_extended import get_jwt_identity
 
 from db import db
-from models import Guest, GuestComment, User
+from models import Guest, GuestComment, User, GuestChangesLogs, GenderEnum
 from typings import UserJwtIdentity
 from utils.parse_date import parse_date
 from utils.parse_json import parse_json
 
 
 def edit_customer(id: int):
+    identity: 'UserJwtIdentity' = get_jwt_identity()
     data = parse_json(request.data)
 
     customer = Guest.query.filter(Guest.id == id).first()
@@ -28,9 +31,18 @@ def edit_customer(id: int):
     if data["passport_issue_date"] is not None:
         data["passport_issue_date"] = parse_date(data["passport_issue_date"])
 
+    if data["gender"] is not None:
+        data["gender"] = GenderEnum.М if data["gender"] == "М" else GenderEnum.Ж
+
+    old_values = json.dumps(Guest.to_json(customer))
     for key in data:
         setattr(customer, key, data[key])
+    new_values = json.dumps(Guest.to_json(customer))
 
+    log = GuestChangesLogs(guest_id=customer.id,
+                           author=identity["name"], new=new_values, old=old_values)
+
+    db.session.add(log)
     db.session.add(customer)
 
     try:
