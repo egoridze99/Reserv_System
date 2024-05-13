@@ -46,4 +46,6 @@ class Guest(AbstractBaseModel):
                 "%Y-%m-%d") if guest.passport_issue_date is not None else None,
             "department_code": guest.department_code,
             "passport_identity": guest.passport_identity,
+
+            "has_comments": len(guest.comments) > 0
         }
