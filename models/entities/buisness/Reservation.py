@@ -1,12 +1,10 @@
 from sqlalchemy import func
 
 from db import db
-from models.entities.Guest import Guest
+from models.entities.buisness import Guest
 from models.enums.UserStatusEnum import UserStatusEnum
 from models.abstract import AbstractBaseModel
-from models.dictionaries import checkout_reservation
-from models.entities.Certificate import Certificate
-from models.entities.Checkout import Checkout
+from models.entities.buisness.Certificate import Certificate
 from models.enums.ReservationStatusEnum import ReservationStatusEnum
 
 
@@ -24,10 +22,8 @@ class Reservation(AbstractBaseModel):
     certificate_id = db.Column(db.Integer, db.ForeignKey("certificate.id", name="certificate_id"), unique=True)
     status = db.Column(db.Enum(ReservationStatusEnum), default=ReservationStatusEnum.not_allowed, nullable=False)
     sum_rent = db.Column(db.Integer, default=0)
-    card = db.Column(db.Integer, default=0)
-    cash = db.Column(db.Integer, default=0)
 
-    checkout = db.relationship('Checkout', secondary=checkout_reservation, cascade="all, delete")
+    transactions = db.relationship('Transaction', secondary='reservation_transaction_dict', cascade="all, delete")
 
     @staticmethod
     def to_json(reservation: 'Reservation'):
@@ -44,8 +40,6 @@ class Reservation(AbstractBaseModel):
                            if reservation.author is not None else UserStatusEnum.deprecated.name},
             'note': reservation.note,
             'status': reservation.status.name,
-            'card': reservation.card,
-            'cash': reservation.cash,
             'rent': reservation.sum_rent,
             'created_at': reservation.created_at.strftime(
                 '%Y-%m-%dT%H:%M') if reservation.created_at is not None else None,
@@ -53,20 +47,3 @@ class Reservation(AbstractBaseModel):
             'guest': Guest.to_json(reservation.guest),
             'checkouts': [Checkout.to_json(checkout) for checkout in reservation.checkout]
         }
-
-    def __str__(self):
-        return """
-            <
-            id = {}
-            Резерв дата = {}  время = {}  продолжительность = {}
-            количество гостей = {} 
-            зал = {} 
-            гость = {}
-            фильм = {} 
-            статус = {}
-            по карте = {} 
-            наличка = {}
-            >
-        """.format(self.id, self.date, self.time, self.duration, self.count, self.room, self.guest,
-                   self.film, self.status, self.card,
-                   self.cash)

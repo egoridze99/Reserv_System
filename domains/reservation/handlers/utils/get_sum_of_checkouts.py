@@ -1,9 +1,9 @@
 from typing import List
 
-from models import Checkout
+from models import Transaction
 
 
-def get_sum_of_checkouts(checkouts: List['Checkout']) -> int:
+def get_sum_of_checkouts(checkouts: List['Transaction']) -> int:
     sum_of_checkouts = 0
 
     for checkout in checkouts:

@@ -5,12 +5,17 @@ queue_room = db.Table('queue_room',
                       db.Column('room_id', db.Integer, db.ForeignKey('room.id', name="room_id"))
                       )
 
-checkout_reservation = db.Table('checkout_reservation',
-                                db.Column('checkout_id', db.Integer, db.ForeignKey('checkout.id', name="checkout_id"),
-                                          unique=True),
-                                db.Column('reservation_id', db.Integer,
-                                          db.ForeignKey('reservation.id', name="reservation_id"))
-                                )
+reservation_transaction_dict = db.Table('reservation_transaction_dict', db.Column('reservation_id', db.Integer,
+                                                                                  db.ForeignKey("reservation.id",
+                                                                                                name="reservation_id")),
+                                        db.Column('transaction_id', db.Integer,
+                                                  db.ForeignKey("transaction.id", name="transaction_id"), unique=True))
+
+certificate_transaction_dict = db.Table('certificate_transaction_dict', db.Column('certificate_id', db.Integer,
+                                                                                  db.ForeignKey("certificate.id",
+                                                                                                name="certificate_id")),
+                                        db.Column('transaction_id', db.Integer,
+                                                  db.ForeignKey("transaction.id", name="transaction_id"), unique=True))
 
 guest_comment_dict = db.Table('guest_comment_dict',
                               db.Column('comment_id', db.Integer, db.ForeignKey('guest_comment.id', name="comment_id"),

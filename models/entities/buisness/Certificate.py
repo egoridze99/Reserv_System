@@ -3,9 +3,9 @@ from sqlalchemy import func
 
 from db import db
 from models.abstract import AbstractBaseModel
-from models.entities.User import User
-from models.entities.Cinema import Cinema
-from models.entities.Guest import Guest
+from models.entities.buisness.User import User
+from models.entities.buisness import Cinema
+from models.entities.buisness import Guest
 
 from models.enums.CertificateStatusEnum import CertificateStatusEnum
 
@@ -19,11 +19,10 @@ class Certificate(AbstractBaseModel):
     cinema_id = db.Column(db.Integer, db.ForeignKey('cinema.id', name="cinema_id"))
     status = db.Column(db.Enum(CertificateStatusEnum), default=CertificateStatusEnum.active)
     sum = db.Column(db.Integer, nullable=False)
-    cash = db.Column(db.Integer, default=0)
-    card = db.Column(db.Integer, default=0)
     service = db.Column(db.String(100), nullable=False)
     note = db.Column(db.Text)
 
+    transactions = db.relationship('Transaction', secondary='certificate_transaction_dict', cascade="all, delete")
     reservation = db.relationship("Reservation", backref='certificate')
 
     def __init__(cls, **kwargs):
@@ -39,8 +38,6 @@ class Certificate(AbstractBaseModel):
             "created_at": certificate.created_at.strftime('%Y-%m-%dT%H:%M'),
             "status": certificate.status.name,
             "sum": certificate.sum,
-            "cash": certificate.cash,
-            "card": certificate.card,
 
             "service": certificate.service,
             "note": certificate.note,

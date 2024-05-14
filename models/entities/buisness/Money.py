@@ -1,10 +1,10 @@
-from datetime import datetime, timedelta
+from datetime import timedelta
 
-from sqlalchemy import select, func
+from sqlalchemy import func
 
 from db import db
 from models.abstract import AbstractBaseModel
-from models.entities.Cinema import Cinema
+from models.entities.buisness import Cinema
 
 
 class Money(AbstractBaseModel):

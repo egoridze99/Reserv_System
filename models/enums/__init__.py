@@ -4,3 +4,5 @@ from models.enums.QueueStatusEnum import QueueStatusEnum
 from models.enums.ReservationStatusEnum import ReservationStatusEnum
 from models.enums.UserStatusEnum import UserStatusEnum
 from models.enums.GenderEnum import GenderEnum
+from models.enums.TransactionStatusEnum import TransactionStatusEnum
+from models.enums.TransactionTypeEnum import TransactionTypeEnum

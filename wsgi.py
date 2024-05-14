@@ -62,7 +62,6 @@ def create_app():
     admin_panel.add_view(ModelView(Guest, db.session))
     admin_panel.add_view(ModelView(Reservation, db.session))
     admin_panel.add_view(ModelView(User, db.session))
-    admin_panel.add_view(ModelView(Checkout, db.session))
     admin_panel.add_view(ModelView(Money, db.session))
     admin_panel.add_view(ModelView(UpdateLogs, db.session))
     admin_panel.add_view(ModelView(Certificate, db.session))

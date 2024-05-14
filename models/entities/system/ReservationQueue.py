@@ -3,9 +3,9 @@ from sqlalchemy import func
 from db import db
 from models.abstract import AbstractBaseModel
 from models.dictionaries import queue_room, queue_logs
-from models.entities.Guest import Guest
-from models.entities.Room import Room
-from models.entities.User import User
+from models.entities.buisness import Guest
+from models.entities.buisness.Room import Room
+from models.entities.buisness.User import User
 from models.enums.QueueStatusEnum import QueueStatusEnum
 
 
