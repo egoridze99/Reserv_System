@@ -1,12 +1,11 @@
 import re
-from datetime import datetime
 
 from flask import request, jsonify
 from flask_jwt_extended import get_jwt_identity
 
 from db import db
 from domains.admin.handlers.queries import *
-from models import EmployeeRoleEnum, Guest, UpdateLogs
+from models import EmployeeRoleEnum, Guest
 from utils.sa_query_result_to_dict import sa_query_result_to_dict
 
 
@@ -21,10 +20,12 @@ def get_common_info():
     till = request.args.get('till')
     area = request.args.get('area')
 
+    print(get_money_query(area, until, till, True))
+
     return jsonify({
         "duration": sa_query_result_to_dict(db.session.execute(get_duration_query(area, until, till))),
-        "money": sa_query_result_to_dict(db.session.execute(get_money_query(area, until, till))),
-        "checkout": sa_query_result_to_dict(db.session.execute(get_checkout_query(area, until, till)))
+        "money": sa_query_result_to_dict(db.session.execute(get_money_query(area, until, till, True))),
+        "checkout": sa_query_result_to_dict(db.session.execute(get_money_query(area, until, till, False)))
     }), 200
 
 

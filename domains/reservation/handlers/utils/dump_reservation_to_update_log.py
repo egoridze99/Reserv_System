@@ -18,5 +18,4 @@ def dump_reservation_to_update_log(reservation: 'Reservation', guest: 'Guest'):
         "guest_name": guest.name,
         "guest_telephone": guest.telephone,
         "certificate_ident": reservation.certificate.ident if reservation.certificate else None,
-        "checkouts": [{"description": item.description, "sum": item.sum} for item in reservation.checkout]
     })

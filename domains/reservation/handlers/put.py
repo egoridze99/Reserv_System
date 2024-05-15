@@ -4,11 +4,11 @@ from typing import Optional, List
 from flask import request, jsonify
 from flask_jwt_extended import get_jwt_identity
 
-from domains.reservation.handlers.utils import check_not_payment, check_the_taking, get_sum_of_checkouts, \
+from domains.reservation.handlers.utils import check_not_payment, check_the_taking, \
     dump_reservation_to_update_log, search_available_items_from_queue, validate_payment
 from db import db
 from models import EmployeeRoleEnum, Reservation, Room, Guest, Certificate, CertificateStatusEnum, \
-    ReservationStatusEnum, Checkout, UpdateLogs, User, ReservationQueue, ReservationQueueViewLog, Cinema
+    ReservationStatusEnum, UpdateLogs, User, ReservationQueue, ReservationQueueViewLog, Cinema
 from utils.count_money import count_money
 from utils.parse_json import parse_json
 from typings import UserJwtIdentity
@@ -79,18 +79,19 @@ def update_reservation(reservation_id: str):
     if check_the_taking(new_date, room, float(data['duration']), reservation.id):
         return {"msg": "Зал занят"}, 400
 
-    for check in data['checkouts']:
-        if 'id' in check:
-            new_check = Checkout.query.filter(Checkout.id == check['id']).first()
-            new_check.sum = check['sum']
-            new_check.description = check['note']
-            checkouts.append(new_check)
-        else:
-            new_check = Checkout(sum=check['sum'], description=check['note'])
-            checkouts.append(new_check)
+    # for check in data['checkouts']:
+    #     if 'id' in check:
+    #         new_check = Checkout.query.filter(Checkout.id == check['id']).first()
+    #         new_check.sum = check['sum']
+    #         new_check.description = check['note']
+    #         checkouts.append(new_check)
+    #     else:
+    #         new_check = Checkout(sum=check['sum'], description=check['note'])
+    #         checkouts.append(new_check)
 
     if data['status'] == ReservationStatusEnum.finished.name:
-        sum_of_checkouts = get_sum_of_checkouts(checkouts)
+        # sum_of_checkouts = get_sum_of_checkouts(checkouts)
+        sum_of_checkouts = 0
         reservation_end_date = reservation.date + timedelta(hours=reservation.duration)
 
         cashier_date = reservation.date.date()
@@ -126,7 +127,6 @@ def update_reservation(reservation_id: str):
     reservation.cash = data['cash']
     reservation.room = room
     reservation.guest = guest
-    reservation.checkout = checkouts
     reservation.certificate = certificate
 
     new_values = dump_reservation_to_update_log(reservation, guest)

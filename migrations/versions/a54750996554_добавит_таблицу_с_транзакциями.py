@@ -5,14 +5,16 @@ Revises: d3935f203b2f
 Create Date: 2024-05-14 17:19:37.025630
 
 """
+import datetime
 from datetime import timedelta
 
 from alembic import op
 import sqlalchemy as sa
 from sqlalchemy import orm
 
-from models import Reservation, Transaction, TransactionTypeEnum, TransactionStatusEnum, Certificate
+from models import Transaction, TransactionTypeEnum, TransactionStatusEnum
 from models.dictionaries import reservation_transaction_dict, certificate_transaction_dict
+from utils.sa_query_result_to_dict import sa_query_result_to_dict
 
 # revision identifiers, used by Alembic.
 revision = 'a54750996554'
@@ -55,83 +57,120 @@ def upgrade():
 
     bind = op.get_bind()
     session = orm.Session(bind=bind)
-    should_update_session = True
 
-    reservations = Reservation.query.all()
+    reservations = sa_query_result_to_dict(bind.execute(
+        """
+        select 
+            reservation.id as id, 
+            c.id as cinema_id,
+            card,
+            cash,
+            date,
+            duration
+        from 
+            reservation 
+        join 
+            room on room.id = reservation.room_id 
+        join 
+            cinema c on room.cinema_id = c.id
+        where 
+            reservation.status = 'finished'
+        """))
+
+    reservation_transaction_mapping = []
     for reservation in reservations:
-        if (should_update_session):
-            session = session.object_session(reservation)
-            should_update_session = False
-
-        transactions = []
-
-        duration = reservation.duration
+        duration = reservation["duration"]
         if isinstance(duration, str):
             if ',' in duration:
                 duration = float(duration.replace(",", "."))
             elif '-' in duration:
                 duration = float(duration.split('-')[0])
 
-        finish_date = reservation.date + timedelta(hours=duration)
+        date_as_str = reservation["date"][:reservation["date"].index('.')] if '.' in reservation["date"] else \
+            reservation["date"]
+        date = datetime.datetime.strptime(date_as_str, "%Y-%m-%d %H:%M:%S")
+        finish_date = date + timedelta(hours=duration)
 
-        checkouts = reservation.checkout
+        checkouts = sa_query_result_to_dict(bind.execute(
+            f"""
+            select 
+                c.id as id, 
+                c.sum as sum,
+                c.description as description
+            from 
+                checkout c 
+            join 
+                checkout_reservation cr on c.id = cr.checkout_id
+            join 
+                reservation r on r.id = cr.reservation_id
+            where 
+                r.id = {reservation['id']}
+            """))
         for checkout in checkouts:
-            if checkout.sum:
-                transaction = Transaction(created_at=finish_date, sum=-checkout.sum,
-                                          description=f"Расход на {checkout.description}",
+            if checkout["sum"]:
+                transaction = Transaction(created_at=finish_date, sum=-checkout["sum"],
+                                          description=f"Расход на {checkout["description"]}",
                                           transaction_type=TransactionTypeEnum.cash,
                                           transaction_status=TransactionStatusEnum.completed,
-                                          cinema_id=reservation.room.cinema.id)
+                                          cinema_id=reservation["cinema_id"])
 
-                transactions.append(transaction)
+                session.add(transaction)
+                reservation_transaction_mapping.append(
+                    {"reservation_id": reservation["id"], "transaction_id": transaction.id})
 
-        if reservation.card is not None and reservation.card:
-            transaction = Transaction(created_at=finish_date, sum=reservation.card,
-                                      description=f"Оплата резерва {reservation.id} по карте",
+        if reservation["card"] is not None and reservation["card"]:
+            transaction = Transaction(created_at=finish_date, sum=reservation["card"],
+                                      description=f"Оплата резерва {reservation["id"]} по карте",
                                       transaction_type=TransactionTypeEnum.card,
                                       transaction_status=TransactionStatusEnum.completed,
-                                      cinema_id=reservation.room.cinema.id)
+                                      cinema_id=reservation['cinema_id'])
 
-            transactions.append(transaction)
+            session.add(transaction)
+            reservation_transaction_mapping.append(
+                {"reservation_id": reservation["id"], "transaction_id": transaction.id})
 
-        if reservation.cash is not None and reservation.cash:
-            transaction = Transaction(created_at=finish_date, sum=reservation.cash,
-                                      description=f"Оплата резерва {reservation.id} наличными",
+        if reservation["cash"] is not None and reservation["cash"]:
+            transaction = Transaction(created_at=finish_date, sum=reservation["cash"],
+                                      description=f"Оплата резерва {reservation["id"]} наличными",
                                       transaction_type=TransactionTypeEnum.cash,
                                       transaction_status=TransactionStatusEnum.completed,
-                                      cinema_id=reservation.room.cinema.id)
+                                      cinema_id=reservation["cinema_id"])
 
-            transactions.append(transaction)
+            session.add(transaction)
+            reservation_transaction_mapping.append(
+                {"reservation_id": reservation["id"], "transaction_id": transaction.id})
 
-        reservation.transactions = transactions
-        session.add(reservation)
-
-    certificates = Certificate.query.all()
+    certificates = sa_query_result_to_dict(bind.execute("select * from certificate"))
+    certificate_transaction_mapping = []
     for certificate in certificates:
-        transactions = []
+        date = datetime.datetime.strptime(certificate["created_at"], "%Y-%m-%d %H:%M:%S")
 
-        if certificate.card is not None and certificate.card:
-            transaction = Transaction(created_at=certificate.created_at, sum=certificate.card,
-                                      description=f"Оплата сертификата {certificate.id} по карте",
+        if certificate["card"] is not None and certificate["card"]:
+            transaction = Transaction(created_at=date, sum=certificate["card"],
+                                      description=f"Оплата сертификата {certificate["id"]} по карте",
                                       transaction_type=TransactionTypeEnum.card,
                                       transaction_status=TransactionStatusEnum.completed,
-                                      cinema_id=certificate.cinema_id)
+                                      cinema_id=certificate["cinema_id"])
 
-            transactions.append(transaction)
+            session.add(transaction)
+            certificate_transaction_mapping.append(
+                {"certificate_id": certificate["id"], "transaction_id": transaction.id})
 
-        if certificate.cash is not None and certificate.cash:
-            transaction = Transaction(created_at=certificate.created_at, sum=certificate.cash,
-                                      description=f"Оплата сертификата {certificate.id} наличными",
+        if certificate["cash"] is not None and certificate["cash"]:
+            transaction = Transaction(created_at=date,
+                                      sum=certificate["cash"],
+                                      description=f"Оплата сертификата {certificate["id"]} наличными",
                                       transaction_type=TransactionTypeEnum.cash,
                                       transaction_status=TransactionStatusEnum.completed,
-                                      cinema_id=certificate.cinema_id)
+                                      cinema_id=certificate["cinema_id"])
 
-            transactions.append(transaction)
-
-        certificate.transactions = transactions
-        session.add(certificate)
+            session.add(transaction)
+            certificate_transaction_mapping.append(
+                {"certificate_id": certificate["id"], "transaction_id": transaction.id})
 
     session.commit()
+    op.bulk_insert(reservation_transaction_dict, reservation_transaction_mapping)
+    op.bulk_insert(certificate_transaction_dict, certificate_transaction_mapping)
     # ### end Alembic commands ###
 
 
