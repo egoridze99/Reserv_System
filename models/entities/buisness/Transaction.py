@@ -18,11 +18,13 @@ class Transaction(AbstractBaseModel):
     description = db.Column(db.String)
 
     cinema_id = db.Column(db.Integer, db.ForeignKey('cinema.id'), nullable=False)
+    author_id = db.Column(db.Integer, db.ForeignKey('user.id'))
 
     transaction_type = db.Column(db.Enum(TransactionTypeEnum), nullable=False)
     transaction_status = db.Column(db.Enum(TransactionStatusEnum), default=TransactionStatusEnum.pending)
 
     cinema = db.relationship("Cinema", backref=backref("transactions", uselist=True))
+    author = db.relationship("User", backref=backref("transactions", uselist=True))
 
     def __init__(cls, **kwargs):
         super().__init__(**kwargs)
