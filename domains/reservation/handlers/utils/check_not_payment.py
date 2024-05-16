@@ -1,12 +1,16 @@
 from typing import Optional
 
-from models import EmployeeRoleEnum, Certificate, ReservationStatusEnum
+from models import EmployeeRoleEnum, Certificate, ReservationStatusEnum, Reservation
 
 
-def check_not_payment(role: EmployeeRoleEnum, data, certificate: Optional["Certificate"]):
-    return data['card'] == 0 \
-            and data['cash'] == 0 \
-            and data['status'] == ReservationStatusEnum.finished.name \
-            and data['rent'] != 0 \
-            and not certificate \
-            and role != EmployeeRoleEnum.root.name
+def check_not_payment(role: EmployeeRoleEnum, reservation: 'Reservation', rent_price: int,
+                      certificate: Optional["Certificate"]):
+    if role == EmployeeRoleEnum.root.value:
+        return False
+
+    sum_of_transactions = sum([t.sum for t in reservation.transactions])
+
+    if certificate:
+        sum_of_transactions += certificate.sum
+
+    return sum_of_transactions < rent_price

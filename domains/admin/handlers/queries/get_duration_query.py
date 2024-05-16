@@ -6,8 +6,7 @@ from reservation
     join room on reservation.room_id = room.id
     join cinema on room.cinema_id = cinema.id
 where
-    reservation.date >= '{until}' and
-    reservation.date <= '{till}' and
+    reservation.date between '{until}' and '{till}' and
     reservation.status = 'finished'
 group by {area}.id;
 """

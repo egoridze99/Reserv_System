@@ -15,7 +15,7 @@ from typings import UserJwtIdentity
 
 
 def update_reservation(reservation_id: str):
-    request_body = parse_json(request.data)
+    request_body = parse_json(request.data)["data"]
     data = request_body["data"]
     current_client_date = datetime.strptime(request_body["currentTime"], "%Y-%m-%d %H:%M")
     identity: 'UserJwtIdentity' = get_jwt_identity()
@@ -33,7 +33,6 @@ def update_reservation(reservation_id: str):
 
     user = User.query.filter(User.id == identity["id"]).first()
 
-    checkouts = []
     new_date = datetime.strptime(f"{data['date']} {data['time']}", '%Y-%m-%d %H:%M')
 
     certificate = None
@@ -48,15 +47,12 @@ def update_reservation(reservation_id: str):
         if certificate.status != CertificateStatusEnum.active:
             return {"msg": "Вы пытаетесь добавить погашенный сертификат"}, 400
 
-    if reservation.status == ReservationStatusEnum.finished \
-            and role != EmployeeRoleEnum.root.name:
-        return {"msg": "Нельзя изменять завершенные сеансы!"}, 400
+    if reservation.status == ReservationStatusEnum.finished:
+        if role != EmployeeRoleEnum.root.name:
+            return {"msg": "Нельзя изменять завершенные сеансы!"}, 400
 
-    if check_not_payment(role, data, certificate):
-        return {"msg": "Клиент не заплатил!"}, 400
-
-    if not validate_payment(role, data, certificate):
-        return {"msg": "Неверные данные об оплате"}, 400
+        if check_not_payment(role, reservation, data["rent"], certificate):
+            return {"msg": "Клиент не заплатил!"}, 400
 
     if reservation.date.date() < (datetime.now() - timedelta(days=1)).date() \
             and data['status'] != ReservationStatusEnum.finished.name \
@@ -79,33 +75,9 @@ def update_reservation(reservation_id: str):
     if check_the_taking(new_date, room, float(data['duration']), reservation.id):
         return {"msg": "Зал занят"}, 400
 
-    # for check in data['checkouts']:
-    #     if 'id' in check:
-    #         new_check = Checkout.query.filter(Checkout.id == check['id']).first()
-    #         new_check.sum = check['sum']
-    #         new_check.description = check['note']
-    #         checkouts.append(new_check)
-    #     else:
-    #         new_check = Checkout(sum=check['sum'], description=check['note'])
-    #         checkouts.append(new_check)
-
     if data['status'] == ReservationStatusEnum.finished.name:
-        # sum_of_checkouts = get_sum_of_checkouts(checkouts)
-        sum_of_checkouts = 0
-        reservation_end_date = reservation.date + timedelta(hours=reservation.duration)
-
-        cashier_date = reservation.date.date()
-        if reservation_end_date.time() <= time(8) and reservation.date.date() == reservation_end_date.date():
-            cashier_date = reservation_end_date.date() - timedelta(days=1)
-
-        money = count_money(cashier_date, cinema.id, data['rent'], data['cash'], data['card'], sum_of_checkouts)
-
-        if money is None:
-            return {"message": "Произошла ошибка. Попробуйте снова"}, 400
         if certificate:
             certificate.status = CertificateStatusEnum.redeemed
-
-        db.session.add(money)
 
     queue: List['ReservationQueue'] = []
     if ReservationStatusEnum[data['status']] == ReservationStatusEnum.canceled:
@@ -115,19 +87,16 @@ def update_reservation(reservation_id: str):
             queue_item.view_logs.append(log_item)
             db.session.add(queue_item)
 
+    fields_to_set = ['duration', 'count', 'film', 'note', 'status', 'rent']
+
     old_values = dump_reservation_to_update_log(reservation, reservation.guest)
     reservation.date = new_date
-    reservation.duration = data['duration']
-    reservation.count = data['count']
-    reservation.film = data['film']
-    reservation.note = data['note']
-    reservation.status = ReservationStatusEnum[data['status']]
-    reservation.sum_rent = data['rent']
-    reservation.card = data['card']
-    reservation.cash = data['cash']
     reservation.room = room
     reservation.guest = guest
     reservation.certificate = certificate
+
+    for field in fields_to_set:
+        setattr(reservation, data[field])
 
     new_values = dump_reservation_to_update_log(reservation, guest)
     update_log = UpdateLogs(reservation_id=reservation.id,

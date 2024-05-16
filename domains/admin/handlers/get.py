@@ -20,8 +20,6 @@ def get_common_info():
     till = request.args.get('till')
     area = request.args.get('area')
 
-    print(get_money_query(area, until, till, True))
-
     return jsonify({
         "duration": sa_query_result_to_dict(db.session.execute(get_duration_query(area, until, till))),
         "money": sa_query_result_to_dict(db.session.execute(get_money_query(area, until, till, True))),

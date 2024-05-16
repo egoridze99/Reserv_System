@@ -5,7 +5,6 @@ from flask_jwt_extended import get_jwt_identity
 
 from db import db
 from models import User, Guest, Cinema, Certificate
-from utils.count_money import count_money
 from utils.parse_json import parse_json
 
 
@@ -19,13 +18,8 @@ def create_certificate():
     if guest is None:
         return {"msg": "Пользователь не найден"}, 400
 
-    if data["card"] + data["cash"] < data["sum"]:
-        return jsonify({"msg": "Оплата по карте и наличкой меньше, чем сумма сертификата"}), 400
-
     certificate = Certificate(
         sum=data["sum"],
-        cash=data["cash"],
-        card=data["card"],
         service=data["service"],
         note=data["note"],
         author=author,
@@ -33,15 +27,7 @@ def create_certificate():
         cinema=cinema
     )
 
-    money = count_money(datetime.today().date(),
-                        data['cinema_id'],
-                        certificate.sum,
-                        certificate.cash,
-                        certificate.card
-                        )
-
     db.session.add(certificate)
-    db.session.add(money)
 
     try:
         db.session.commit()

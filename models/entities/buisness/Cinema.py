@@ -26,5 +26,5 @@ class Cinema(AbstractBaseModel):
             "name": cinema.name,
             "rooms": [Room.to_json(room) for room in cinema.room],
 
-            "sbp_terminal": cinema.sbp_terminal
+            "sbp_terminal": cinema.sbp_terminal.id
         }
