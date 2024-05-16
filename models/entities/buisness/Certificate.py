@@ -4,8 +4,8 @@ from sqlalchemy import func
 from db import db
 from models.abstract import AbstractBaseModel
 from models.entities.buisness.User import User
-from models.entities.buisness import Cinema
-from models.entities.buisness import Guest
+from models.entities.buisness.Cinema import Cinema
+from models.entities.buisness.Guest import Guest
 
 from models.enums.CertificateStatusEnum import CertificateStatusEnum
 

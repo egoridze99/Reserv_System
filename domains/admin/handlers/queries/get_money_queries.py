@@ -1,4 +1,4 @@
-from models import TransactionTypeEnum
+from models import TransactionTypeEnum, TransactionStatusEnum
 
 
 def get_money_query(area, until, till, is_income):
@@ -32,6 +32,7 @@ def get_money_query(area, until, till, is_income):
         
                                 left join room on room.id = reservation.room_id
                                 where
-                                    t.created_at between '{until}' and '{till}') 
+                                    t.created_at between '{until}' and '{till}' and
+                                    t.transaction_status = '{TransactionStatusEnum.completed.value}') 
                         group by id);
 """
