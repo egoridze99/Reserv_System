@@ -1,3 +1,5 @@
+from sqlalchemy.orm import backref
+
 from models.abstract import AbstractBaseModel
 from db import db
 from models.dictionaries import queue_room
@@ -8,7 +10,7 @@ class Room(AbstractBaseModel):
     name = db.Column(db.String(40), nullable=False)
     cinema_id = db.Column(db.Integer, db.ForeignKey('cinema.id', name="cinema_id"))
 
-    reservation = db.relationship("Reservation", backref='room')
+    cinema = db.relationship("Cinema", backref=backref("rooms", uselist=True))
     queue = db.relationship('ReservationQueue', secondary=queue_room)
 
     def __str__(self):

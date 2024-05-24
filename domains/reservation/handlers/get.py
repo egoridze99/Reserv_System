@@ -1,10 +1,10 @@
 from datetime import datetime, timedelta, time
 
 from flask import request, jsonify, json
-from sqlalchemy import func, and_, text, String
+from sqlalchemy import func, String, Integer, text
 from sqlalchemy.sql.elements import Cast
 
-from models import Reservation, Room, ReservationStatusEnum, Guest, UpdateLogs
+from models import Reservation, Room, ReservationStatusEnum, Guest, UpdateLogs, Cinema, City
 
 
 def get_reservations():
@@ -15,24 +15,13 @@ def get_reservations():
     if not date or not cinema_id:
         return {"message": "Не все данные"}, 400
 
-    reservations = Reservation.query.join(Room).filter(
-        (
-            (func.date(Reservation.date) == date) & (
-            func.datetime(
-                Reservation.date,
-                "+" + Cast(Reservation.duration, String) + " hours"
-            ) > datetime.combine(date, time(8)))
-        ) |
-        (
-            func.datetime(
-                Reservation.date,
-                "+" + Cast(Reservation.duration, String) + " hours"
-            ) <= datetime.combine(date + timedelta(days=1), time(8))) & (
-            date + timedelta(days=1) == func.date(Reservation.date))
-    )
+    reservations = Reservation.query.join(Room).join(Cinema).join(City).filter(
+        text(
+            "date(get_shift_date(reservation.date, city.timezone, reservation.duration)) = :target")).params(
+        target=date)
 
     if not room_id:
-        reservations = reservations.filter(Room.cinema_id == cinema_id).all()
+        reservations = reservations.filter(Cinema.id == cinema_id).all()
     else:
         reservations = reservations.filter(Room.id == room_id).all()
 

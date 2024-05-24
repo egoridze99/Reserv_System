@@ -6,6 +6,7 @@ from models.enums.UserStatusEnum import UserStatusEnum
 from models.abstract import AbstractBaseModel
 from models.entities.buisness.Certificate import Certificate
 from models.enums.ReservationStatusEnum import ReservationStatusEnum
+from utils.convert_tz import convert_tz
 
 
 class Reservation(AbstractBaseModel):
@@ -23,13 +24,15 @@ class Reservation(AbstractBaseModel):
     status = db.Column(db.Enum(ReservationStatusEnum), default=ReservationStatusEnum.not_allowed, nullable=False)
     sum_rent = db.Column(db.Integer, default=0)
 
+    room = db.relationship("Room")
     transactions = db.relationship('Transaction', secondary='reservation_transaction_dict', cascade="all, delete")
 
     @staticmethod
     def to_json(reservation: 'Reservation'):
         return {
             'id': reservation.id,
-            'date': reservation.date.strftime('%Y-%m-%dT%H:%M'),
+            'date': convert_tz(reservation.date, reservation.room.cinema.city.timezone, False).strftime(
+                '%Y-%m-%dT%H:%M'),
             'room': {"id": reservation.room.id, "name": reservation.room.name},
             'duration': reservation.duration,
             'count': reservation.count,

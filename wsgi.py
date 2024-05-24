@@ -8,6 +8,8 @@ from flask_migrate import Migrate, MigrateCommand
 from flask_script import Manager
 import sys
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import event
+from sqlalchemy.engine import Engine
 
 from config import Config
 
@@ -17,6 +19,7 @@ from domains import references_blueprint, reservations_blueprint, money_blueprin
 from db import db
 from scheduler_jobs import expired_queue_item_cleaner
 from models import *
+from sqlite_functions.get_shift_date import get_shift_date
 
 
 def get_application_port():
@@ -85,6 +88,10 @@ def configure_scheduler(app: 'Flask', db: 'SQLAlchemy'):
 def configure_application(no_scheduler=False):
     app = create_app()
 
+    @event.listens_for(Engine, "connect")
+    def connect(dbapi_connection, _):
+        dbapi_connection.create_function("get_shift_date", 3, get_shift_date)
+
     if not no_scheduler:
         scheduler = configure_scheduler(app, db)
 
@@ -95,4 +102,5 @@ def configure_application(no_scheduler=False):
 
 if __name__ == '__main__':
     app = configure_application(no_scheduler=True)
+
     app.run(port=get_application_port())

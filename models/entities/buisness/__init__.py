@@ -8,3 +8,4 @@ from models.entities.buisness.User import User
 from models.entities.buisness.SbpTerminal import SbpTerminal
 from models.entities.buisness.Transaction import Transaction
 from models.entities.buisness.ReservationQueue import ReservationQueue
+from models.entities.buisness.City import City

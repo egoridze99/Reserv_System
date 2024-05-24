@@ -1,10 +1,10 @@
 from datetime import datetime, timedelta, time
 
 from flask import request, jsonify, json
-from sqlalchemy import func, String
+from sqlalchemy import func, String, Integer
 from sqlalchemy.sql.elements import Cast
 
-from models import ReservationQueue, QueueStatusEnum, Room, Guest
+from models import ReservationQueue, QueueStatusEnum, Room, Guest, Cinema, City
 from models.dictionaries import queue_room
 from utils.inersection import intersection
 
@@ -17,34 +17,37 @@ def get_queue():
     if not date:
         return {"message": "Не все данные"}, 400
 
-    queue = ReservationQueue\
-        .query\
-        .join(queue_room)\
-        .join(Room)\
+    queue = ReservationQueue \
+        .query \
+        .join(queue_room) \
+        .join(Room) \
+        .join(Cinema) \
+        .join(City) \
         .filter(
-            (
-                (func.date(ReservationQueue.start_date) == date) & (
+        (
+                (func.date(ReservationQueue.start_date, func.substr(City.timezone, 0, 4) + " hours") == date) & (
                 func.datetime(
-                        ReservationQueue.start_date,
-                        "+" + Cast(ReservationQueue.duration, String) + " hours"
+                    ReservationQueue.start_date,
+                    "+" + Cast(ReservationQueue.duration + Cast(func.substr(City.timezone, 0, 4), Integer),
+                               String) + " hours"
                 ) > datetime.combine(date, time(8)))) |
-                (func.datetime(
-                    func.IIF(
-                        ReservationQueue.end_date,
-                        ReservationQueue.end_date,
-                        ReservationQueue.start_date
-                    ),
-                    "+" + Cast(ReservationQueue.duration, String) + " hours"
-                ) <= datetime.combine(date + timedelta(days=1), time(8))) &
-                (date + timedelta(days=1) == func.date(
-                func.IIF(
-                    ReservationQueue.end_date,
-                    ReservationQueue.end_date,
-                    ReservationQueue.start_date
-                    )
-                )
-            )
-        )
+        (func.datetime(
+            func.IIF(
+                ReservationQueue.end_date,
+                ReservationQueue.end_date,
+                ReservationQueue.start_date
+            ),
+            "+" + Cast(ReservationQueue.duration + Cast(func.substr(City.timezone, 0, 4), Integer),
+                       String) + " hours"
+        ) <= datetime.combine(date + timedelta(days=1), time(8))) &
+        (date + timedelta(days=1) == func.date(
+            func.IIF(
+                ReservationQueue.end_date,
+                ReservationQueue.end_date,
+                ReservationQueue.start_date
+            ), func.substr(City.timezone, 0, 4) + " hours")
+         )
+    )
 
     # Я хз как через алхимию такой фильтр сделать, фильтрую силами питона
     if not room_id:

@@ -37,8 +37,10 @@ def upgrade():
                     sa.Column('transaction_status',
                               sa.Enum('pending', 'rejected', 'completed', 'refunded', name='transactionstatusenum'),
                               nullable=True),
+                    sa.Column('author_id', sa.Integer()),
                     sa.ForeignKeyConstraint(['cinema_id'], ['cinema.id'], name=op.f('fk_transaction_cinema_id_cinema')),
-                    sa.PrimaryKeyConstraint('id', name=op.f('pk_transaction'))
+                    sa.PrimaryKeyConstraint('id', name=op.f('pk_transaction')),
+                    sa.ForeignKeyConstraint(['author_id'], ['user.id'], name=op.f('fk_transaction_author_id_user')),
                     )
     op.create_table('certificate_transaction_dict',
                     sa.Column('certificate_id', sa.Integer(), nullable=True),
@@ -80,11 +82,9 @@ def upgrade():
     reservation_transaction_mapping = []
     for reservation in reservations:
         duration = reservation["duration"]
-        if isinstance(duration, str):
-            if ',' in duration:
-                duration = float(duration.replace(",", "."))
-            elif '-' in duration:
-                duration = float(duration.split('-')[0])
+        if isinstance(duration, str) and ',' in duration:
+            duration = float(duration.replace(",", "."))
+            op.execute(f"UPDATE reservation SET duration = {duration} WHERE id = {reservation['id']}")
 
         date_as_str = reservation["date"][:reservation["date"].index('.')] if '.' in reservation["date"] else \
             reservation["date"]
@@ -112,7 +112,7 @@ def upgrade():
                                           description=f"Расход на {checkout["description"]}",
                                           transaction_type=TransactionTypeEnum.cash,
                                           transaction_status=TransactionStatusEnum.completed,
-                                          cinema_id=reservation["cinema_id"])
+                                          cinema_id=reservation["cinema_id"], author_id=2)
 
                 session.add(transaction)
                 reservation_transaction_mapping.append(
@@ -123,7 +123,7 @@ def upgrade():
                                       description=f"Оплата резерва {reservation["id"]} по карте",
                                       transaction_type=TransactionTypeEnum.card,
                                       transaction_status=TransactionStatusEnum.completed,
-                                      cinema_id=reservation['cinema_id'])
+                                      cinema_id=reservation['cinema_id'], author_id=2)
 
             session.add(transaction)
             reservation_transaction_mapping.append(
@@ -134,7 +134,7 @@ def upgrade():
                                       description=f"Оплата резерва {reservation["id"]} наличными",
                                       transaction_type=TransactionTypeEnum.cash,
                                       transaction_status=TransactionStatusEnum.completed,
-                                      cinema_id=reservation["cinema_id"])
+                                      cinema_id=reservation["cinema_id"], author_id=2)
 
             session.add(transaction)
             reservation_transaction_mapping.append(
@@ -150,7 +150,7 @@ def upgrade():
                                       description=f"Оплата сертификата {certificate["id"]} по карте",
                                       transaction_type=TransactionTypeEnum.card,
                                       transaction_status=TransactionStatusEnum.completed,
-                                      cinema_id=certificate["cinema_id"])
+                                      cinema_id=certificate["cinema_id"], author_id=2)
 
             session.add(transaction)
             certificate_transaction_mapping.append(
@@ -162,7 +162,7 @@ def upgrade():
                                       description=f"Оплата сертификата {certificate["id"]} наличными",
                                       transaction_type=TransactionTypeEnum.cash,
                                       transaction_status=TransactionStatusEnum.completed,
-                                      cinema_id=certificate["cinema_id"])
+                                      cinema_id=certificate["cinema_id"], author_id=2)
 
             session.add(transaction)
             certificate_transaction_mapping.append(

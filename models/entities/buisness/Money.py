@@ -1,6 +1,7 @@
 from datetime import timedelta
 
 from sqlalchemy import func
+from sqlalchemy.orm import backref
 
 from db import db
 from models.abstract import AbstractBaseModel
@@ -17,7 +18,10 @@ class Money(AbstractBaseModel):
     cashier_end = db.Column(db.Integer, nullable=False, default=0)
     all_by_card = db.Column(db.Integer, nullable=False, default=0)
     all_by_cash = db.Column(db.Integer, nullable=False, default=0)
+
     cinema_id = db.Column(db.Integer, db.ForeignKey('cinema.id', name="cinema_id"))
+
+    cinema = db.relationship("Cinema", backref=backref("money_records", uselist=True))
 
     def __init__(cls, **kwargs):
         super().__init__(**kwargs)

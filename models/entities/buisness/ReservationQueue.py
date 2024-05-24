@@ -7,6 +7,7 @@ from models.entities.buisness import Guest
 from models.entities.buisness.Room import Room
 from models.entities.buisness.User import User
 from models.enums.QueueStatusEnum import QueueStatusEnum
+from utils.convert_tz import convert_tz
 
 
 class ReservationQueue(AbstractBaseModel):
@@ -29,8 +30,10 @@ class ReservationQueue(AbstractBaseModel):
     def to_json(reservation: 'ReservationQueue'):
         return {
             'id': reservation.id,
-            'start_date': reservation.start_date.strftime('%Y-%m-%dT%H:%M'),
-            'end_date': reservation.end_date.strftime('%Y-%m-%dT%H:%M') if reservation.end_date else None,
+            'start_date': convert_tz(reservation.start_date, reservation.rooms[0].cinema.city.timezone).strftime(
+                '%Y-%m-%dT%H:%M'),
+            'end_date': convert_tz(reservation.end_date, reservation.rooms[0].cinema.city.timezone).strftime(
+                '%Y-%m-%dT%H:%M') if reservation.end_date else None,
             'has_another_reservation': reservation.has_another_reservation,
             'duration': reservation.duration,
             'guests_count': reservation.guests_count,

@@ -5,15 +5,15 @@ def get_money_query(area, until, till, is_income):
     def get_transactions_by_type(type: 'TransactionTypeEnum'):
         return f"""select sum from "transaction" where id = t.id and transaction_type = '{type}' and {'sum > 0' if is_income else 'sum < 0'}"""
 
-    return f""" select 
-                    area, 
-                    card, 
-                    cash, 
-                    sbp, 
+    return f""" select
+                    area,
+                    card,
+                    cash,
+                    sbp,
                     (ifnull(card, 0) + ifnull(cash, 0) + ifnull(sbp, 0)) as sum from (
-                        select 
-                            name as area, 
-                            sum(card) as card, 
+                        select
+                            name as area,
+                            sum(card) as card,
                             sum(cash) as cash,
                             sum(sbp) as sbp from
                                 (select
@@ -25,14 +25,15 @@ def get_money_query(area, until, till, is_income):
                                 from
                                     "transaction" t
                                 left join cinema on cinema.id = t.cinema_id
+                                left join city on cinema.id = city.id
                                 left join
                                     reservation_transaction_dict rtd on rtd.transaction_id = t.id
                                 left join
                                     reservation on rtd.reservation_id = reservation.id
-        
+
                                 left join room on room.id = reservation.room_id
                                 where
-                                    t.created_at between '{until}' and '{till}' and
-                                    t.transaction_status = '{TransactionStatusEnum.completed.value}') 
+                                    date(reservation.date, city.timezone) between date('{until}') and date('{till}') and
+                                    t.transaction_status = '{TransactionStatusEnum.completed.value}')
                         group by id);
 """
