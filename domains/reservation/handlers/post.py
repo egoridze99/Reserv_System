@@ -7,6 +7,7 @@ from db import db
 from domains.reservation.handlers.utils import check_the_taking
 from models import EmployeeRoleEnum, Room, Guest, Certificate, CertificateStatusEnum, Reservation, User
 from typings import UserJwtIdentity
+from utils.convert_tz import convert_tz
 from utils.is_date_in_last import is_date_in_last
 from utils.parse_json import parse_json
 
@@ -21,12 +22,13 @@ def create_reservation():
 
     room = Room.query.filter(Room.id == data['room']).first()
     guest = Guest.query.filter(Guest.id == data['guest']).first()
-    date = datetime.strptime(f"{data['date']} {data['time']}", "%Y-%m-%d %H:%M")
+    date = convert_tz(datetime.strptime(f"{data['date']} {data['time']}", "%Y-%m-%d %H:%M"), room.cinema.city.timezone,
+                      True)
 
     if check_the_taking(date, room, float(data['duration'])):
         return {"msg": "Зал занят"}, 400
 
-    if is_date_in_last(date.date()):
+    if is_date_in_last(date) and role != EmployeeRoleEnum.root.value:
         return {"msg": "Дата уже прошла"}, 400
 
     certificate = None
@@ -55,7 +57,7 @@ def create_reservation():
         certificate=certificate,
     )
     db.session.add(reservation)
-    
+
     try:
         db.session.commit()
         return {"msg": "ok"}, 201

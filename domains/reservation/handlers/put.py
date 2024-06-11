@@ -9,15 +9,14 @@ from domains.reservation.handlers.utils import check_not_payment, check_the_taki
 from db import db
 from models import EmployeeRoleEnum, Reservation, Room, Guest, Certificate, CertificateStatusEnum, \
     ReservationStatusEnum, UpdateLogs, User, ReservationQueue, ReservationQueueViewLog, Cinema
-from utils.count_money import count_money
+from utils.convert_tz import convert_tz
 from utils.parse_json import parse_json
 from typings import UserJwtIdentity
+from utils.set_tz import set_tz
 
 
 def update_reservation(reservation_id: str):
-    request_body = parse_json(request.data)["data"]
-    data = request_body["data"]
-    current_client_date = datetime.strptime(request_body["currentTime"], "%Y-%m-%d %H:%M")
+    data = parse_json(request.data)["data"]
     identity: 'UserJwtIdentity' = get_jwt_identity()
 
     role = identity["role"]
@@ -28,12 +27,12 @@ def update_reservation(reservation_id: str):
 
     reservation = Reservation.query.filter(Reservation.id == reservation_id).first()
     room = Room.query.filter(Room.id == data['room']).first()
-    cinema = Cinema.query.filter(Cinema.id == room.cinema_id).first()
     guest = Guest.query.filter(Guest.id == data['guest']).first()
-
     user = User.query.filter(User.id == identity["id"]).first()
 
-    new_date = datetime.strptime(f"{data['date']} {data['time']}", '%Y-%m-%d %H:%M')
+    new_date = convert_tz(datetime.strptime(f"{data['date']} {data['time']}", "%Y-%m-%d %H:%M"),
+                          room.cinema.city.timezone,
+                          True)
 
     certificate = None
     certificate_ident = data["certificate_ident"]
@@ -66,7 +65,10 @@ def update_reservation(reservation_id: str):
                 and EmployeeRoleEnum[role] != EmployeeRoleEnum.root
 
         if reservation_end_date.date() == (datetime.now() + timedelta(days=1)).date():
-            if reservation_end_date.time() > time(8) and check_other_constraints(data, role):
+            max_end_time = set_tz(datetime.combine((datetime.now() + timedelta(days=1)).date(), time(8)),
+                                  reservation.room.cinema.city.timezone).time()
+
+            if reservation_end_date.time() > max_end_time and check_other_constraints(data, role):
                 return {"msg": "Как может завершиться сеанс в будещем?)"}, 400
         else:
             if check_other_constraints(data, role):
@@ -81,22 +83,24 @@ def update_reservation(reservation_id: str):
 
     queue: List['ReservationQueue'] = []
     if ReservationStatusEnum[data['status']] == ReservationStatusEnum.canceled:
-        queue = search_available_items_from_queue(reservation, current_client_date)
+        queue = search_available_items_from_queue(reservation)
+
         log_item = ReservationQueueViewLog(reservation=reservation, user=user)
         for queue_item in queue:
             queue_item.view_logs.append(log_item)
             db.session.add(queue_item)
 
-    fields_to_set = ['duration', 'count', 'film', 'note', 'status', 'rent']
+    fields_to_set = ['duration', 'count', 'film', 'note', 'rent']
 
     old_values = dump_reservation_to_update_log(reservation, reservation.guest)
     reservation.date = new_date
     reservation.room = room
     reservation.guest = guest
     reservation.certificate = certificate
+    reservation.status = ReservationStatusEnum[data["status"]]
 
     for field in fields_to_set:
-        setattr(reservation, data[field])
+        setattr(reservation, field, data[field])
 
     new_values = dump_reservation_to_update_log(reservation, guest)
     update_log = UpdateLogs(reservation_id=reservation.id,

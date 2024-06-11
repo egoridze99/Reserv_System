@@ -2,7 +2,9 @@ from datetime import datetime, timedelta
 
 from sqlalchemy import func
 
+from constants.time import MOSCOW_OFFSET
 from models import Reservation, ReservationStatusEnum, Room
+from utils.set_tz import set_tz
 
 
 def check_the_taking(date: datetime, room: Room, duration: float, reservation_id=None):
@@ -11,7 +13,8 @@ def check_the_taking(date: datetime, room: Room, duration: float, reservation_id
 
     reservations = Reservation \
         .query \
-        .filter(func.date(Reservation.date).in_([date.date() - timedelta(days=1), date.date(), date.date() + timedelta(days=1)])) \
+        .filter(func.date(Reservation.date).in_(
+        [date.date() - timedelta(days=1), date.date(), date.date() + timedelta(days=1)])) \
         .filter(Reservation.room == room) \
         .all()
 
@@ -24,15 +27,16 @@ def check_the_taking(date: datetime, room: Room, duration: float, reservation_id
         if reservation_id is not None and reservation.id == reservation_id:
             continue
 
-        reservation_end_date = reservation.date + timedelta(hours=reservation.duration)
+        reservation_date_with_tz = set_tz(reservation.date, MOSCOW_OFFSET)
+        reservation_end_date = reservation_date_with_tz + timedelta(hours=reservation.duration)
 
-        if date == reservation.date:
+        if date == reservation_date_with_tz:
             return True
 
-        if date < reservation.date <= new_reservation_end_date:
+        if date < reservation_date_with_tz <= new_reservation_end_date:
             return True
 
-        if reservation.date < date <= reservation_end_date:
+        if reservation_date_with_tz < date <= reservation_end_date:
             return True
 
     return False

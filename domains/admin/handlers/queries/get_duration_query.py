@@ -1,7 +1,7 @@
 from sqlalchemy import func, text
 
 from db import db
-from models import TransactionStatusEnum, Room, Cinema, Reservation, City, ReservationStatusEnum
+from models import Room, Cinema, Reservation, City, ReservationStatusEnum
 
 
 def get_duration_query(area, until, till):

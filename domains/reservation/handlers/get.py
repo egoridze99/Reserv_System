@@ -1,8 +1,7 @@
-from datetime import datetime, timedelta, time
+from datetime import datetime
 
 from flask import request, jsonify, json
-from sqlalchemy import func, String, Integer, text
-from sqlalchemy.sql.elements import Cast
+from sqlalchemy import text
 
 from models import Reservation, Room, ReservationStatusEnum, Guest, UpdateLogs, Cinema, City
 
@@ -36,7 +35,7 @@ def search_reservations():
     start_date: str = request.args.get('date_from')
     end_date: str = request.args.get('date_to')
 
-    reservation_query = Reservation.query.join(Room).join(Guest)
+    reservation_query = Reservation.query.join(Room).join(Guest).join(Cinema).join(City)
 
     if statuses:
         statuses = [ReservationStatusEnum[status] for status in json.loads(statuses)]
@@ -55,11 +54,15 @@ def search_reservations():
 
     if start_date:
         start_date_as_date = datetime.strptime(start_date, '%Y-%m-%d').date()
-        reservation_query = reservation_query.filter(func.date(Reservation.date) >= start_date_as_date)
+        reservation_query = reservation_query.filter(text(
+            "date(get_shift_date(reservation.date, city.timezone, reservation.duration)) >= :start_date")).params(
+            start_date=start_date_as_date)
 
     if end_date:
         end_date_as_date = datetime.strptime(end_date, '%Y-%m-%d')
-        reservation_query = reservation_query.filter(func.date(Reservation.date) <= end_date_as_date)
+        reservation_query = reservation_query.filter(text(
+            "date(get_shift_date(reservation.date, city.timezone, reservation.duration)) <= :end_date")).params(
+            end_date=end_date_as_date)
 
     reservations = reservation_query.all()
 

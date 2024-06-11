@@ -2,11 +2,10 @@ import re
 
 from flask import request, jsonify
 from flask_jwt_extended import get_jwt_identity
-from sqlalchemy import func, text
 
 from db import db
 from domains.admin.handlers.queries import *
-from models import EmployeeRoleEnum, Guest, Room, Cinema, Reservation, ReservationStatusEnum, City
+from models import EmployeeRoleEnum, Guest
 from utils.sa_query_result_to_dict import sa_query_result_to_dict
 
 
