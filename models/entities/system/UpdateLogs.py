@@ -4,7 +4,6 @@ from sqlalchemy import func
 
 from db import db
 from models.abstract import AbstractBaseModel
-from utils.convert_tz import convert_tz
 
 
 class UpdateLogs(AbstractBaseModel):
@@ -17,10 +16,10 @@ class UpdateLogs(AbstractBaseModel):
     new = db.Column(db.Text)
 
     @staticmethod
-    def to_json(log, tz):
+    def to_json(log):
         return {
             "id": log.id,
-            "created_at": convert_tz(log.created_at, tz, False).strftime('%Y-%m-%dT%H:%M'),
+            "created_at": log.created_at.strftime('%Y-%m-%dT%H:%M'),
             "author": log.author,
             "old": json.loads(log.old),
             "new": json.loads(log.new)

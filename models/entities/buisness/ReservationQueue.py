@@ -47,9 +47,6 @@ class ReservationQueue(AbstractBaseModel):
             'contact': Guest.to_json(reservation.contact),
             'view_by': [{"reservation_id": log.reservation.id,
                          "user": User.to_json(log.user),
-                         "created_at": convert_tz(log.created_at, reduce_city_from_rooms(
-                             reservation.rooms).timezone if reduce_city_from_rooms(
-                             reservation.rooms) else MOSCOW_OFFSET, False).strftime(
-                             '%Y-%m-%dT%H:%M')
+                         "created_at": log.created_at.strftime('%Y-%m-%dT%H:%M')
                          } for log in reservation.view_logs]
         }
