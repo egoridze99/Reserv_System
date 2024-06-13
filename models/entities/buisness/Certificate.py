@@ -1,5 +1,6 @@
 import shortuuid
 from sqlalchemy import func
+from sqlalchemy.orm import backref
 
 from db import db
 from models.abstract import AbstractBaseModel
@@ -8,6 +9,7 @@ from models.entities.buisness.Cinema import Cinema
 from models.entities.buisness.Guest import Guest
 
 from models.enums.CertificateStatusEnum import CertificateStatusEnum
+from utils.convert_tz import convert_tz
 
 
 class Certificate(AbstractBaseModel):
@@ -24,6 +26,7 @@ class Certificate(AbstractBaseModel):
 
     transactions = db.relationship('Transaction', secondary='certificate_transaction_dict', cascade="all, delete")
     reservation = db.relationship("Reservation", backref='certificate')
+    cinema = db.relationship("Cinema", backref=backref('certificate', uselist=True))
 
     def __init__(cls, **kwargs):
         super().__init__(**kwargs)
@@ -35,7 +38,8 @@ class Certificate(AbstractBaseModel):
             "id": certificate.id,
             "ident": certificate.ident,
 
-            "created_at": certificate.created_at.strftime('%Y-%m-%dT%H:%M'),
+            "created_at": convert_tz(certificate.created_at, certificate.cinema.city.timezone, False).strftime(
+                '%Y-%m-%dT%H:%M'),
             "status": certificate.status.name,
             "sum": certificate.sum,
 

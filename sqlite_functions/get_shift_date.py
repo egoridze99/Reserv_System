@@ -6,7 +6,7 @@ from utils.convert_tz import convert_tz
 def get_shift_date(date_str: str, timezone: str, duration: int):
     if date_str is None:
         return None
-    
+
     try:
         try:
             date = datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S.%f")

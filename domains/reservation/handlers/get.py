@@ -70,8 +70,10 @@ def search_reservations():
 
 
 def get_logs(reservation_id):
-    logs = UpdateLogs.query.filter(UpdateLogs.reservation_id == reservation_id).all()
-    logs = [UpdateLogs.to_json(log) for log in logs]
+    reservation = Reservation.query.filter(Reservation.id == reservation_id).first()
+    logs = UpdateLogs.query.filter(UpdateLogs.reservation_id == reservation.id).all()
+
+    logs = [UpdateLogs.to_json(log, reservation.room.cinema.city.timezone) for log in logs]
     logs.sort(key=lambda x: x['created_at'])
 
     return jsonify(logs)

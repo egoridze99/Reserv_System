@@ -1,5 +1,6 @@
 from sqlalchemy import func
 
+from constants.time import MOSCOW_OFFSET
 from db import db
 from models.abstract import AbstractBaseModel
 from models.dictionaries import queue_room, queue_logs
@@ -8,6 +9,7 @@ from models.entities.buisness.Room import Room
 from models.entities.buisness.User import User
 from models.enums.QueueStatusEnum import QueueStatusEnum
 from utils.convert_tz import convert_tz
+from utils.reduce_city_from_rooms import reduce_city_from_rooms
 
 
 class ReservationQueue(AbstractBaseModel):
@@ -30,9 +32,9 @@ class ReservationQueue(AbstractBaseModel):
     def to_json(reservation: 'ReservationQueue'):
         return {
             'id': reservation.id,
-            'start_date': convert_tz(reservation.start_date, reservation.rooms[0].cinema.city.timezone).strftime(
+            'start_date': convert_tz(reservation.start_date, reservation.rooms[0].cinema.city.timezone, False).strftime(
                 '%Y-%m-%dT%H:%M'),
-            'end_date': convert_tz(reservation.end_date, reservation.rooms[0].cinema.city.timezone).strftime(
+            'end_date': convert_tz(reservation.end_date, reservation.rooms[0].cinema.city.timezone, False).strftime(
                 '%Y-%m-%dT%H:%M') if reservation.end_date else None,
             'has_another_reservation': reservation.has_another_reservation,
             'duration': reservation.duration,
@@ -45,6 +47,9 @@ class ReservationQueue(AbstractBaseModel):
             'contact': Guest.to_json(reservation.contact),
             'view_by': [{"reservation_id": log.reservation.id,
                          "user": User.to_json(log.user),
-                         "created_at": log.created_at.strftime('%Y-%m-%dT%H:%M')
+                         "created_at": convert_tz(log.created_at, reduce_city_from_rooms(
+                             reservation.rooms).timezone if reduce_city_from_rooms(
+                             reservation.rooms) else MOSCOW_OFFSET, False).strftime(
+                             '%Y-%m-%dT%H:%M')
                          } for log in reservation.view_logs]
         }
