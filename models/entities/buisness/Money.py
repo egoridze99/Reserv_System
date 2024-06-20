@@ -1,27 +1,24 @@
 from datetime import timedelta
+from functools import reduce
 
 from sqlalchemy import func
 from sqlalchemy.orm import backref
 
 from db import db
+from models.entities.buisness import Transaction
+from models.enums import TransactionTypeEnum, TransactionStatusEnum
 from models.abstract import AbstractBaseModel
-from models.entities.buisness import Cinema
 
 
 class Money(AbstractBaseModel):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     date = db.Column(db.Date, nullable=False, default=func.date(func.localtimestamp()))
-    income = db.Column(db.Integer, nullable=False, default=0)
-    expense = db.Column(db.Integer, nullable=False, default=0)
-    proceeds = db.Column(db.Integer, nullable=False, default=0)
     cashier_start = db.Column(db.Integer, nullable=False, default=0)
-    cashier_end = db.Column(db.Integer, nullable=False, default=0)
-    all_by_card = db.Column(db.Integer, nullable=False, default=0)
-    all_by_cash = db.Column(db.Integer, nullable=False, default=0)
 
     cinema_id = db.Column(db.Integer, db.ForeignKey('cinema.id', name="cinema_id"))
 
     cinema = db.relationship("Cinema", backref=backref("money_records", uselist=True))
+    transactions = db.relationship('Transaction', secondary='cashier_transaction_dict', cascade="all, delete")
 
     def __init__(cls, **kwargs):
         super().__init__(**kwargs)
@@ -50,17 +47,44 @@ class Money(AbstractBaseModel):
 
                 previous_day -= timedelta(days=1)
 
-    def __str__(self):
-        return f"""
-        <Деньги date={self.date} 
-        income={self.income} 
-        expense = {self.expense}
-        proceeds = {self.proceeds}
-        cashier_start = {self.cashier_start}
-        cashier_end = {self.cashier_end}
-        all_by_card = {self.all_by_card}
-        all_by_cash = {self.all_by_cash}>
-        """
+    @property
+    def income(cls):
+        return reduce(lambda x, y: x + y.sum,
+                      filter(lambda t: t.sum >= 0 and cls.__is_transaction_completed(t), cls.transactions), 0)
+
+    @property
+    def expense(cls):
+        return reduce(lambda x, y: x + y.sum,
+                      filter(lambda t: t.sum <= 0 and cls.__is_transaction_completed(t), cls.transactions), 0)
+
+    @property
+    def all_by_card(cls):
+        return reduce(lambda x, y: x + y.sum, filter(
+            lambda t: t.sum >= 0 and cls.__is_card_transaction(t) and cls.__is_transaction_completed(t),
+            cls.transactions), 0)
+
+    @property
+    def all_by_cash(cls):
+        return reduce(lambda x, y: x + y.sum, filter(
+            lambda t: t.sum >= 0 and cls.__is_cash_transaction(t) and cls.__is_transaction_completed(t),
+            cls.transactions), 0)
+
+    @property
+    def proceeds(cls):
+        return cls.income + cls.expense
+
+    @property
+    def cashier_end(cls):
+        return cls.cashier_start + cls.expense + cls.all_by_cash
+
+    def __is_transaction_completed(cls, t: 'Transaction'):
+        return t.transaction_status == TransactionStatusEnum.completed
+
+    def __is_card_transaction(cls, t: 'Transaction'):
+        return t.transaction_type == TransactionTypeEnum.card
+
+    def __is_cash_transaction(cls, t: 'Transaction'):
+        return t.transaction_type == TransactionTypeEnum.cash
 
     @staticmethod
     def to_json(money: 'Money'):
@@ -74,5 +98,4 @@ class Money(AbstractBaseModel):
             "cashier_end": money.cashier_end,
             "all_by_card": money.all_by_card,
             "all_by_cash": money.all_by_cash,
-            "cinema": Cinema.to_json(money.cinema),
         }

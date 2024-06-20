@@ -7,11 +7,9 @@ Create Date: 2024-05-17 19:18:30.352497
 """
 from datetime import timedelta, timezone
 
-from alembic import op
-from sqlalchemy import orm
 from sqlalchemy.orm import object_session
 
-from models import Reservation, ReservationQueue
+from models import Reservation, ReservationQueue, Transaction
 
 # revision identifiers, used by Alembic.
 revision = '7e826343320d'
@@ -79,8 +77,34 @@ def upgrade():
 
         session.commit()
 
+    def update_transactions():
+        session = None
+        transactions = Transaction.query.all()
+
+        for transaction in transactions:
+            if not session:
+                session = object_session(transaction)
+
+            city = transaction.cinema.city
+            moscow_offset = "+00:00"
+
+            offset_hours, offset_minutes = map(int, city.timezone.split(':'))
+            offset = timedelta(hours=offset_hours, minutes=offset_minutes)
+            tz = timezone(offset)
+
+            moscow_tz = timezone(
+                timedelta(hours=int(moscow_offset[:3]), minutes=int(moscow_offset[4:])))
+
+            transaction_date_with_timezone = transaction.created_at.replace(tzinfo=tz)
+            transaction.created_at = transaction_date_with_timezone.astimezone(moscow_tz)
+
+            session.add(transaction)
+
+        session.commit()
+
     update_reservations()
     update_queue()
+    update_transactions()
 
 
 def downgrade():

@@ -90,7 +90,7 @@ def update_reservation(reservation_id: str):
             queue_item.view_logs.append(log_item)
             db.session.add(queue_item)
 
-    fields_to_set = ['duration', 'count', 'film', 'note', 'rent']
+    fields_to_set = ['duration', 'count', 'film', 'note']
 
     old_values = dump_reservation_to_update_log(reservation, reservation.guest)
     reservation.date = new_date
@@ -98,6 +98,7 @@ def update_reservation(reservation_id: str):
     reservation.guest = guest
     reservation.certificate = certificate
     reservation.status = ReservationStatusEnum[data["status"]]
+    reservation.sum_rent = data["rent"]
 
     for field in fields_to_set:
         setattr(reservation, field, data[field])

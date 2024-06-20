@@ -4,7 +4,8 @@ from flask import request, jsonify
 from flask_jwt_extended import get_jwt_identity
 
 from db import db
-from models import User, Guest, Cinema, Certificate
+from models import User, Guest, Cinema, Certificate, Transaction, TransactionTypeEnum, TransactionStatusEnum
+from utils.add_transaction_to_cashier import add_transaction_to_cashier
 from utils.parse_json import parse_json
 
 
@@ -26,6 +27,28 @@ def create_certificate():
         contact=guest,
         cinema=cinema
     )
+
+    transactions = data["transactions"]
+    transaction_models = []
+    for transaction in transactions:
+        status = TransactionStatusEnum.completed if TransactionTypeEnum[
+                                                        transaction[
+                                                            "transaction_type"]] != TransactionTypeEnum.sbp else TransactionStatusEnum.pending
+
+        transaction_model = Transaction(
+            created_at=datetime.now(),
+            sum=transaction["sum"],
+            description=f"Оплата сертификата {certificate.ident}",
+            transaction_type=transaction["transaction_type"],
+            transaction_status=status,
+            cinema=cinema,
+            author=author
+        )
+
+        add_transaction_to_cashier(transaction_model)
+        transaction_models.append(transaction_model)
+
+    certificate.transactions = transaction_models
 
     db.session.add(certificate)
 

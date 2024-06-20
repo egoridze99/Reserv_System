@@ -17,6 +17,12 @@ certificate_transaction_dict = db.Table('certificate_transaction_dict', db.Colum
                                         db.Column('transaction_id', db.Integer,
                                                   db.ForeignKey("transaction.id", name="transaction_id"), unique=True))
 
+cashier_transaction_dict = db.Table('cashier_transaction_dict',
+                                    db.Column("cashier_id", db.Integer, db.ForeignKey("money.id", name="cashier_id")
+                                              ), db.Column("transaction_id", db.Integer,
+                                                           db.ForeignKey("transaction.id",
+                                                                         name="transaction_id"), unique=True))
+
 guest_comment_dict = db.Table('guest_comment_dict',
                               db.Column('comment_id', db.Integer, db.ForeignKey('guest_comment.id', name="comment_id"),
                                         unique=True),

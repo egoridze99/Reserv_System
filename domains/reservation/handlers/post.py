@@ -15,7 +15,7 @@ from utils.parse_json import parse_json
 def create_reservation():
     identity: UserJwtIdentity = get_jwt_identity()
     data = parse_json(request.data)
-    role = get_jwt_identity()["role"]
+    role = identity["role"]
 
     if EmployeeRoleEnum[role] == EmployeeRoleEnum.operator:
         return {"message": "У вас не хватает прав на это"}, 403

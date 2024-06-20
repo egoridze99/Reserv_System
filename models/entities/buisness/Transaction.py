@@ -4,6 +4,7 @@ from sqlalchemy.orm import backref
 
 from db import db
 from models.abstract import AbstractBaseModel
+from models.entities.buisness.User import User
 from models.enums import TransactionStatusEnum, TransactionTypeEnum
 
 
@@ -28,4 +29,23 @@ class Transaction(AbstractBaseModel):
 
     def __init__(cls, **kwargs):
         super().__init__(**kwargs)
-        cls.id = shortuuid.ShortUUID().random(length=32)
+
+        if not cls.id:
+            cls.id = Transaction.generate_id()
+
+    @staticmethod
+    def generate_id():
+        return shortuuid.ShortUUID().random(length=64)
+
+    @staticmethod
+    def to_json(transaction: "Transaction"):
+        return {
+            "id": transaction.id,
+            "created_at": transaction.created_at.strftime("%d-%m-%Y %H:%M"),
+            "sum": transaction.sum,
+            "alias": transaction.alias,
+            "description": transaction.description,
+            "author": User.to_json(transaction.author),
+            "transaction_type": transaction.transaction_type.value,
+            "transaction_status": transaction.transaction_status.value,
+        }
