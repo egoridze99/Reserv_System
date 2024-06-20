@@ -109,7 +109,7 @@ def upgrade():
         for checkout in checkouts:
             if checkout["sum"]:
                 transaction = Transaction(created_at=finish_date, sum=-checkout["sum"],
-                                          description=f"Расход на {checkout["description"]}",
+                                          description=f"Расход на {checkout['description']}",
                                           transaction_type=TransactionTypeEnum.cash,
                                           transaction_status=TransactionStatusEnum.completed,
                                           cinema_id=reservation["cinema_id"], author_id=2)
@@ -120,7 +120,7 @@ def upgrade():
 
         if reservation["card"] is not None and reservation["card"]:
             transaction = Transaction(created_at=finish_date, sum=reservation["card"],
-                                      description=f"Оплата резерва {reservation["id"]} по карте",
+                                      description=f"Оплата резерва {reservation['id']} по карте",
                                       transaction_type=TransactionTypeEnum.card,
                                       transaction_status=TransactionStatusEnum.completed,
                                       cinema_id=reservation['cinema_id'], author_id=2)
@@ -131,7 +131,7 @@ def upgrade():
 
         if reservation["cash"] is not None and reservation["cash"]:
             transaction = Transaction(created_at=finish_date, sum=reservation["cash"],
-                                      description=f"Оплата резерва {reservation["id"]} наличными",
+                                      description=f"Оплата резерва {reservation['id']} наличными",
                                       transaction_type=TransactionTypeEnum.cash,
                                       transaction_status=TransactionStatusEnum.completed,
                                       cinema_id=reservation["cinema_id"], author_id=2)
@@ -147,7 +147,7 @@ def upgrade():
 
         if certificate["card"] is not None and certificate["card"]:
             transaction = Transaction(created_at=date, sum=certificate["card"],
-                                      description=f"Оплата сертификата {certificate["id"]} по карте",
+                                      description=f"Оплата сертификата {certificate['id']} по карте",
                                       transaction_type=TransactionTypeEnum.card,
                                       transaction_status=TransactionStatusEnum.completed,
                                       cinema_id=certificate["cinema_id"], author_id=2)
@@ -159,7 +159,7 @@ def upgrade():
         if certificate["cash"] is not None and certificate["cash"]:
             transaction = Transaction(created_at=date,
                                       sum=certificate["cash"],
-                                      description=f"Оплата сертификата {certificate["id"]} наличными",
+                                      description=f"Оплата сертификата {certificate['id']} наличными",
                                       transaction_type=TransactionTypeEnum.cash,
                                       transaction_status=TransactionStatusEnum.completed,
                                       cinema_id=certificate["cinema_id"], author_id=2)
