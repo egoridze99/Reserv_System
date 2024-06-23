@@ -34,9 +34,7 @@ def search_available_items_from_queue(reservation: 'Reservation') -> List[
         filter(ReservationQueue.status == QueueStatusEnum.active). \
         all()
 
-    print(queue_items)
     queue_items = list(filter(lambda i: filter_expired_item(i), queue_items))
-    print(queue_items)
 
     result = []
     for item in queue_items:

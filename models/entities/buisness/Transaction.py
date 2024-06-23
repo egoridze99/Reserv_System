@@ -27,6 +27,9 @@ class Transaction(AbstractBaseModel):
     cinema = db.relationship("Cinema", backref=backref("transactions", uselist=True))
     author = db.relationship("User", backref=backref("transactions", uselist=True))
 
+    __reservation = db.relationship('Reservation', secondary='reservation_transaction_dict', cascade="all, delete")
+    __certificate = db.relationship('Certificate', secondary='certificate_transaction_dict', cascade="all, delete")
+
     def __init__(cls, **kwargs):
         super().__init__(**kwargs)
 
@@ -39,6 +42,8 @@ class Transaction(AbstractBaseModel):
 
     @staticmethod
     def to_json(transaction: "Transaction"):
+        print(transaction.__reservation)
+
         return {
             "id": transaction.id,
             "created_at": transaction.created_at.strftime("%d-%m-%Y %H:%M"),
@@ -48,4 +53,6 @@ class Transaction(AbstractBaseModel):
             "author": User.to_json(transaction.author),
             "transaction_type": transaction.transaction_type.value,
             "transaction_status": transaction.transaction_status.value,
+            "related_reservation_id": transaction.__reservation[0].id if transaction.__reservation else None,
+            "related_certificate_id": transaction.__certificate[0].ident if transaction.__certificate else None
         }

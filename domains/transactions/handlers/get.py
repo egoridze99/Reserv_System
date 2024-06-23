@@ -22,19 +22,28 @@ def get_certificate_transactions(id: int):
 
 def get_cinema_transactions(cinema_id: int):
     date = parse_date(request.args.get("date"))
-
     transactions = Transaction \
         .query \
         .join(Cinema) \
         .join(City) \
         .outerjoin(reservation_transaction_dict, Transaction.id == reservation_transaction_dict.c.transaction_id) \
-        .outerjoin(certificate_transaction_dict, Transaction.id == certificate_transaction_dict.c.transaction_id) \
-        .filter(reservation_transaction_dict.c.transaction_id == None) \
+        .outerjoin(Reservation, reservation_transaction_dict.c.reservation_id == Reservation.id) \
         .filter((Transaction.cinema_id == cinema_id)) \
         .filter(text("""date(get_shift_date("transaction".created_at, city.timezone, 0)) = :target""")).params(
         target=date) \
+        .filter(
+        text(
+            """iif(
+                get_shift_date(
+                reservation.date, 
+                city.timezone, 
+                reservation.duration),
+                date(
+                    get_shift_date(
+                        reservation.date, 
+                        city.timezone, 
+                        reservation.duration)) != :given_date, true)""")).params(
+        given_date=date) \
         .all()
-
-    print(transactions)
 
     return jsonify([Transaction.to_json(transaction) for transaction in transactions]), 200
