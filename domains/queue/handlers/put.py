@@ -29,7 +29,7 @@ def edit_queue_item(id: int):
     start_time = datetime.strptime(data['start_time'], '%H:%M').time()
     end_time = datetime.strptime(data["end_time"], '%H:%M').time() if data["end_time"] else None
 
-    start_date = convert_tz(datetime.combine(date, start_time), city.timezone or MOSCOW_OFFSET, False)
+    start_date = convert_tz(datetime.combine(date, start_time), city.timezone or MOSCOW_OFFSET, True)
     end_date = None
 
     if end_time:
@@ -37,7 +37,7 @@ def edit_queue_item(id: int):
             return {"msg": "Неверный временной диапазон"}, 400
 
         end_date = date + timedelta(days=1) if end_time < start_time else date
-        end_date = convert_tz(datetime.combine(end_date, end_time), city.timezone or MOSCOW_OFFSET, False)
+        end_date = convert_tz(datetime.combine(end_date, end_time), city.timezone or MOSCOW_OFFSET, True)
 
     queue_item.start_date = start_date
     queue_item.end_date = end_date

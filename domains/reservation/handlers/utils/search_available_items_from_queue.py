@@ -14,7 +14,12 @@ def filter_expired_item(item: 'ReservationQueue'):
     current_client_date = datetime.now()
     item_date = item.start_date if item.end_date is None else item.end_date
 
-    return item_date <= current_client_date
+    print(f"Client date: {current_client_date}")
+    print(f"Queue item date: {item_date}")
+
+    print(item_date)
+
+    return item_date >= current_client_date
 
 
 def search_available_items_from_queue(reservation: 'Reservation') -> List[
@@ -29,7 +34,9 @@ def search_available_items_from_queue(reservation: 'Reservation') -> List[
         filter(ReservationQueue.status == QueueStatusEnum.active). \
         all()
 
+    print(queue_items)
     queue_items = list(filter(lambda i: filter_expired_item(i), queue_items))
+    print(queue_items)
 
     result = []
     for item in queue_items:
