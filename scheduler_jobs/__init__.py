@@ -1,1 +1,2 @@
 from scheduler_jobs.expired_queue_item_cleaner import expired_queue_item_cleaner
+from scheduler_jobs.expired_reservations_cleaner import expired_reservations_cleaner

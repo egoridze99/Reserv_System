@@ -18,7 +18,7 @@ from domains import references_blueprint, reservations_blueprint, money_blueprin
 
 from db import db
 from domains.transactions import transactions_blueprint
-from scheduler_jobs import expired_queue_item_cleaner
+from scheduler_jobs import expired_queue_item_cleaner, expired_reservations_cleaner
 from models import *
 from sqlite_functions.get_shift_date import get_shift_date
 
@@ -76,10 +76,19 @@ def create_app():
 
 def configure_scheduler(app: 'Flask', db: 'SQLAlchemy'):
     scheduler = BackgroundScheduler(daemon=False)
+    
     scheduler.add_job(lambda: expired_queue_item_cleaner(app, db),
                       'cron',
                       id="queue_cleaner",
                       name="queue_cleaner",
+                      hour='8',
+                      minute='0',
+                      replace_existing=True)
+
+    scheduler.add_job(lambda: expired_reservations_cleaner(app, db),
+                      'cron',
+                      id="reservations_cleaner",
+                      name="reservations_cleaner",
                       hour='8',
                       minute='0',
                       replace_existing=True)
