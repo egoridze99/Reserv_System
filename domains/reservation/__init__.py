@@ -15,6 +15,15 @@ def get_reservations():
     return handlers.get_reservations()
 
 
+@reservations_blueprint.route("/<reservation_id>")
+@jwt_required
+@check_user_status
+def get_reservation(reservation_id):
+    reservation_id = int(reservation_id)
+
+    return handlers.get_reservation_by_id(reservation_id)
+
+
 @reservations_blueprint.route('/search')
 @jwt_required
 @check_user_status

@@ -1,6 +1,9 @@
+from functools import reduce
+
 from sqlalchemy import func
 
 from db import db
+from models.enums.TransactionStatusEnum import TransactionStatusEnum
 from models.entities.buisness import Guest
 from models.enums.UserStatusEnum import UserStatusEnum
 from models.abstract import AbstractBaseModel
@@ -27,6 +30,12 @@ class Reservation(AbstractBaseModel):
     room = db.relationship("Room")
     transactions = db.relationship('Transaction', secondary='reservation_transaction_dict', cascade="all, delete")
 
+    @property
+    def sum_of_transactions(self):
+        return reduce(lambda sum, t: sum + t.sum,
+                      filter(lambda t: t.transaction_status == TransactionStatusEnum.completed,
+                             self.transactions), 0) or 0
+
     @staticmethod
     def to_json(reservation: 'Reservation'):
         return {
@@ -44,6 +53,7 @@ class Reservation(AbstractBaseModel):
             'note': reservation.note,
             'status': reservation.status.name,
             'rent': reservation.sum_rent,
+            'sum_of_transactions': reservation.sum_of_transactions,
             'created_at': reservation.created_at.strftime(
                 '%Y-%m-%dT%H:%M') if reservation.created_at is not None else None,
             "certificate": Certificate.to_json(reservation.certificate) if reservation.certificate else None,

@@ -27,6 +27,12 @@ def get_reservations():
     return jsonify([Reservation.to_json(reservation) for reservation in reservations]), 200
 
 
+def get_reservation_by_id(reservation_id: int):
+    reservation = Reservation.query.filter(Reservation.id == reservation_id).first()
+
+    return jsonify(Reservation.to_json(reservation)), 200
+
+
 def search_reservations():
     statuses: list[ReservationStatusEnum] = request.args.get('status')
     rooms: list[Room] = request.args.get('room')
