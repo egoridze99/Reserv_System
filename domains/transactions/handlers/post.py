@@ -6,7 +6,6 @@ from flask_jwt_extended import get_jwt_identity
 from db import db
 from models import Transaction, Reservation, TransactionTypeEnum, TransactionStatusEnum, Cinema
 from typings import UserJwtIdentity
-from utils.add_transaction_to_cashier import add_transaction_to_cashier
 from utils.parse_json import parse_json
 
 
@@ -58,7 +57,6 @@ def create_transaction():
         transaction_type=data['transaction_type'],
         transaction_status=transaction_status,
     )
-    add_transaction_to_cashier(transaction)
 
     if reservation:
         reservation.transactions.append(transaction)

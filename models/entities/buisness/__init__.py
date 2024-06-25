@@ -1,7 +1,6 @@
 from models.entities.buisness.Certificate import Certificate
 from models.entities.buisness.Cinema import Cinema
 from models.entities.buisness.Guest import Guest
-from models.entities.buisness.Money import Money
 from models.entities.buisness.Reservation import Reservation
 from models.entities.buisness.Room import Room
 from models.entities.buisness.User import User

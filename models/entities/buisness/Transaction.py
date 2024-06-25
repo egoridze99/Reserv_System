@@ -42,8 +42,6 @@ class Transaction(AbstractBaseModel):
 
     @staticmethod
     def to_json(transaction: "Transaction"):
-        print(transaction.__reservation)
-
         return {
             "id": transaction.id,
             "created_at": transaction.created_at.strftime("%d-%m-%Y %H:%M"),

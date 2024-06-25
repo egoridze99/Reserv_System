@@ -5,7 +5,6 @@ from flask_jwt_extended import get_jwt_identity
 
 from db import db
 from models import User, Guest, Cinema, Certificate, Transaction, TransactionTypeEnum, TransactionStatusEnum
-from utils.add_transaction_to_cashier import add_transaction_to_cashier
 from utils.parse_json import parse_json
 
 
@@ -45,7 +44,6 @@ def create_certificate():
             author=author
         )
 
-        add_transaction_to_cashier(transaction_model)
         transaction_models.append(transaction_model)
 
     certificate.transactions = transaction_models
