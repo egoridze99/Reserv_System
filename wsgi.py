@@ -76,7 +76,7 @@ def create_app():
 
 def configure_scheduler(app: 'Flask', db: 'SQLAlchemy'):
     scheduler = BackgroundScheduler(daemon=False)
-    
+
     scheduler.add_job(lambda: expired_queue_item_cleaner(app, db),
                       'cron',
                       id="queue_cleaner",
@@ -86,12 +86,10 @@ def configure_scheduler(app: 'Flask', db: 'SQLAlchemy'):
                       replace_existing=True)
 
     scheduler.add_job(lambda: expired_reservations_cleaner(app, db),
-                      'cron',
+                      'interval',
                       id="reservations_cleaner",
                       name="reservations_cleaner",
-                      hour='8',
-                      minute='0',
-                      replace_existing=True)
+                      minutes=15)
 
     return scheduler
 
@@ -112,6 +110,6 @@ def configure_application(no_scheduler=False):
 
 
 if __name__ == '__main__':
-    app = configure_application(no_scheduler=True)
+    app = configure_application(no_scheduler=False)
 
     app.run(port=get_application_port())
