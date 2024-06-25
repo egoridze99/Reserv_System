@@ -110,6 +110,6 @@ def configure_application(no_scheduler=False):
 
 
 if __name__ == '__main__':
-    app = configure_application(no_scheduler=False)
+    app = configure_application(no_scheduler=True)
 
     app.run(port=get_application_port())
