@@ -4,14 +4,15 @@ from typing import Optional, List
 from flask import request, jsonify
 from flask_jwt_extended import get_jwt_identity
 
-from domains.reservation.handlers.utils import check_not_payment, check_the_taking, \
-    dump_reservation_to_update_log, search_available_items_from_queue, validate_payment
 from db import db
+from domains.reservation.handlers.utils import check_not_payment, check_the_taking, \
+    dump_reservation_to_update_log, search_available_items_from_queue
 from models import EmployeeRoleEnum, Reservation, Room, Guest, Certificate, CertificateStatusEnum, \
-    ReservationStatusEnum, UpdateLogs, User, ReservationQueue, ReservationQueueViewLog, Cinema
-from utils.convert_tz import convert_tz
-from utils.parse_json import parse_json
+    ReservationStatusEnum, UpdateLogs, User, ReservationQueue, ReservationQueueViewLog
 from typings import UserJwtIdentity
+from utils.convert_tz import convert_tz
+from utils.is_date_in_last import is_date_in_last
+from utils.parse_json import parse_json
 from utils.set_tz import set_tz
 
 
@@ -33,6 +34,9 @@ def update_reservation(reservation_id: str):
     new_date = convert_tz(datetime.strptime(f"{data['date']} {data['time']}", "%Y-%m-%d %H:%M"),
                           room.cinema.city.timezone,
                           True)
+
+    if is_date_in_last(new_date) and role != EmployeeRoleEnum.root.value:
+        return {"msg": "Дата уже прошла"}, 400
 
     certificate = None
     certificate_ident = data["certificate_ident"]
