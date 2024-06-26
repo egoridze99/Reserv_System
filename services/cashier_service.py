@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import func, text
+from sqlalchemy import func, text, case
 
 from db import db
 from models import Transaction, Cinema, City, TransactionStatusEnum, TransactionTypeEnum
@@ -9,39 +9,43 @@ from models import Transaction, Cinema, City, TransactionStatusEnum, Transaction
 class CashierService:
     @staticmethod
     def __get_base_query(date: datetime.date, cinema_id: int):
-        return db.session.query(func.sum(Transaction.sum)) \
-            .join(Cinema) \
-            .join(City) \
-            .filter(Transaction.cinema_id == cinema_id) \
-            .filter(Transaction.transaction_status == TransactionStatusEnum.completed) \
-            .filter(text("""date(get_shift_date("transaction".created_at, city.timezone, 0)) = :target_date""")) \
+        subquery = (
+            db.session.query(
+                func.sum(Transaction.sum).label("total_sum"),
+                func.sum(
+                    case([(Transaction.sum >= 0, Transaction.sum)], else_=0)
+                ).label("income_sum"),
+                func.sum(
+                    case([(Transaction.sum < 0, Transaction.sum)], else_=0)
+                ).label("expense_sum"),
+                func.sum(
+                    case([(Transaction.sum >= 0,
+                           case([(Transaction.transaction_type == TransactionTypeEnum.cash, Transaction.sum)],
+                                else_=0))], else_=0)
+                ).label("cash_sum"),
+                func.sum(
+                    case([(Transaction.sum >= 0,
+                           case([(Transaction.transaction_type == TransactionTypeEnum.card, Transaction.sum)],
+                                else_=0))], else_=0)
+                ).label("card_sum")
+            )
+            .join(Cinema)
+            .join(City)
+            .filter(Transaction.cinema_id == cinema_id)
+            .filter(Transaction.transaction_status == TransactionStatusEnum.completed)
+            .filter(text("""date(get_shift_date("transaction".created_at, city.timezone, 0)) = :target_date"""))
             .params(target_date=date)
+            .subquery()
+        )
 
-    @staticmethod
-    def __get_income(date: datetime.date, cinema_id: int):
-        return CashierService.__get_base_query(date, cinema_id).filter(Transaction.sum >= 0).scalar()
-
-    @staticmethod
-    def __get_expense(date: datetime.date, cinema_id: int):
-        return CashierService.__get_base_query(date, cinema_id).filter(Transaction.sum < 0).scalar()
-
-    @staticmethod
-    def __get_all_by_cash(date: datetime.date, cinema_id: int):
-        return CashierService.__get_base_query(date, cinema_id) \
-            .filter(Transaction.sum >= 0) \
-            .filter(Transaction.transaction_type == TransactionTypeEnum.cash) \
-            .scalar()
-
-    @staticmethod
-    def __get_all_by_card(date: datetime.date, cinema_id: int):
-        return CashierService.__get_base_query(date, cinema_id) \
-            .filter(Transaction.sum >= 0) \
-            .filter(Transaction.transaction_type == TransactionTypeEnum.card) \
-            .scalar()
+        return db.session.query(subquery.c.total_sum, subquery.c.income_sum, subquery.c.expense_sum,
+                                subquery.c.cash_sum, subquery.c.card_sum)
 
     @staticmethod
     def __get_cashier_start_base_query(date: datetime.date, cinema_id: int):
-        return db.session.query(func.sum(Transaction.sum)) \
+        return db.session.query(
+            func.sum(Transaction.sum)
+        ) \
             .join(Cinema) \
             .join(City) \
             .filter(Transaction.cinema_id == cinema_id) \
@@ -51,22 +55,19 @@ class CashierService:
             .params(target_date=date)
 
     @staticmethod
-    def __get_cashier_start(date, cinema_id: int):
-        all_income = CashierService.__get_cashier_start_base_query(date, cinema_id).filter(
-            Transaction.sum >= 0).scalar()
-        all_expense = CashierService.__get_cashier_start_base_query(date, cinema_id).filter(
-            Transaction.sum < 0).scalar()
-
-        return all_income + all_expense
-
-    @staticmethod
     def get_cashier_info(date: datetime.date, cinema_id: int):
-        income = CashierService.__get_income(date, cinema_id) or 0
-        expense = CashierService.__get_expense(date, cinema_id) or 0
+        base_data = CashierService.__get_base_query(date, cinema_id).first()
+        cashier_start_income = CashierService.__get_cashier_start_base_query(date, cinema_id).filter(
+            Transaction.sum >= 0).scalar() or 0
+        cashier_start_expense = CashierService.__get_cashier_start_base_query(date, cinema_id).filter(
+            Transaction.sum < 0).scalar() or 0
+
+        income = base_data.income_sum or 0
+        expense = base_data.expense_sum or 0
         proceeds = income + expense
-        all_by_cash = CashierService.__get_all_by_cash(date, cinema_id) or 0
-        all_by_card = CashierService.__get_all_by_card(date, cinema_id) or 0
-        cashier_start = CashierService.__get_cashier_start(date, cinema_id) or 0
+        all_by_cash = base_data.cash_sum or 0
+        all_by_card = base_data.card_sum or 0
+        cashier_start = cashier_start_income + cashier_start_expense
         cashier_end = cashier_start + expense + all_by_cash
 
         return {

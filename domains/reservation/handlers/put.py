@@ -50,6 +50,9 @@ def update_reservation(reservation_id: str):
         if certificate.status != CertificateStatusEnum.active:
             return {"msg": "Вы пытаетесь добавить погашенный сертификат"}, 400
 
+    if reservation.certificate and ReservationStatusEnum[data["status"]] == ReservationStatusEnum.canceled:
+        reservation.certificate_id = None
+
     if reservation.status == ReservationStatusEnum.finished:
         if role != EmployeeRoleEnum.root.name:
             return {"msg": "Нельзя изменять завершенные сеансы!"}, 400

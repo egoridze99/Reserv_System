@@ -1,24 +1,34 @@
+import json
 from datetime import datetime
 
 from flask import request, jsonify
 from flask_jwt_extended import get_jwt_identity
 
 from db import db
-from models import Transaction, Reservation, TransactionTypeEnum, TransactionStatusEnum, Cinema
+from domains.transactions.handlers.utils.dump_transaction_to_json import dump_transaction_to_json
+from models import Transaction, Reservation, TransactionTypeEnum, TransactionStatusEnum, Cinema, TransactionChangesLog
 from typings import UserJwtIdentity
 from utils.parse_json import parse_json
 
 
 def make_refund(id: str):
+    identity: 'UserJwtIdentity' = get_jwt_identity()
+
     transaction = Transaction.query.filter_by(id=id).first()
 
     if not transaction:
         return jsonify({"msg": "Транзакция не найдена"}), 400
 
+    old_values = json.dumps(dump_transaction_to_json(transaction))
     transaction.transaction_status = TransactionStatusEnum.refunded
+    new_values = json.dumps(dump_transaction_to_json(transaction))
+
+    log = TransactionChangesLog(transaction_id=transaction.id,
+                                author=identity["name"], new=new_values, old=old_values)
 
     try:
         db.session.add(transaction)
+        db.session.add(log)
         db.session.commit()
         return jsonify({"msg": "ok"}), 200
     except:

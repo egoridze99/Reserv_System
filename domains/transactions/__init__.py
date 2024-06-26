@@ -1,4 +1,4 @@
-from flask import Blueprint
+from flask import Blueprint, request
 from flask_jwt_extended import jwt_required
 from decorators import check_user_status
 
@@ -33,6 +33,16 @@ def get_cinema_transactions(cinema_id):
     cinema_id = int(cinema_id)
 
     return handlers.get_cinema_transactions(cinema_id)
+
+
+@transactions_blueprint.route('/logs')
+@jwt_required
+@check_user_status
+def get_logs():
+    args = request.args
+    transaction_id = args.get('transaction_id')
+
+    return handlers.get_logs(transaction_id)
 
 
 # POST

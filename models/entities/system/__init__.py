@@ -2,3 +2,4 @@ from models.entities.system.UpdateLogs import UpdateLogs
 from models.entities.system.ReservationQueueViewLog import ReservationQueueViewLog
 from models.entities.system.GuestComment import GuestComment
 from models.entities.system.GuestChangesLogs import GuestChangesLogs
+from models.entities.system.TransactionChangesLog import TransactionChangesLog

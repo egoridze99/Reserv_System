@@ -16,14 +16,12 @@ def check_the_taking(date: datetime, room: Room, duration: float, reservation_id
         .filter(func.date(Reservation.date).in_(
         [date.date() - timedelta(days=1), date.date(), date.date() + timedelta(days=1)])) \
         .filter(Reservation.room == room) \
+        .filter(Reservation.status != ReservationStatusEnum.canceled) \
         .all()
 
     new_reservation_end_date = date + timedelta(hours=duration)
 
     for reservation in reservations:
-        if reservation.status == ReservationStatusEnum.canceled:
-            continue
-
         if reservation_id is not None and reservation.id == reservation_id:
             continue
 
