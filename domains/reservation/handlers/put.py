@@ -17,7 +17,7 @@ from utils.set_tz import set_tz
 
 
 def update_reservation(reservation_id: str):
-    data = parse_json(request.data)["data"]
+    data = parse_json(request.data)
     identity: 'UserJwtIdentity' = get_jwt_identity()
 
     role = identity["role"]
@@ -36,7 +36,11 @@ def update_reservation(reservation_id: str):
                           True)
 
     if is_date_in_last(new_date) and role != EmployeeRoleEnum.root.value:
-        return {"msg": "Дата уже прошла"}, 400
+        if reservation.date != new_date:
+            return {"msg": "Дата уже прошла"}, 400
+
+        if reservation.duration < data['duration']:
+            return {"msg": "Вы пытаетесь уменьшить продолжительность резерва"}, 400
 
     certificate = None
     certificate_ident = data["certificate_ident"]
