@@ -4,6 +4,7 @@ from typing import Optional, List
 from flask import request, jsonify
 from flask_jwt_extended import get_jwt_identity
 
+from constants.time import MOSCOW_OFFSET
 from db import db
 from domains.reservation.handlers.utils import check_not_payment, check_the_taking, \
     dump_reservation_to_update_log, search_available_items_from_queue
@@ -36,7 +37,7 @@ def update_reservation(reservation_id: str):
                           True)
 
     if is_date_in_last(new_date) and role != EmployeeRoleEnum.root.value:
-        if reservation.date != new_date:
+        if set_tz(reservation.date, MOSCOW_OFFSET) != new_date:
             return {"msg": "Дата уже прошла"}, 400
 
         if reservation.duration < data['duration']:
