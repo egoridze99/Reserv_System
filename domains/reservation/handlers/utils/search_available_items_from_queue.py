@@ -19,8 +19,6 @@ def filter_expired_item(item: 'ReservationQueue'):
 
 def search_available_items_from_queue(reservation: 'Reservation') -> List[
     'ReservationQueue']:
-    reservation_city = reservation.room.cinema.city
-
     reservation_end_date = reservation.date + timedelta(hours=reservation.duration)
 
     queue_items: List[ReservationQueue] = ReservationQueue.query. \
@@ -33,9 +31,7 @@ def search_available_items_from_queue(reservation: 'Reservation') -> List[
 
     result = []
     for item in queue_items:
-        available_cities = set([room.cinema.city for room in item.rooms])
-
-        if reservation_city not in available_cities:
+        if reservation.room not in item.rooms:
             continue
 
         if item.end_date is None:
