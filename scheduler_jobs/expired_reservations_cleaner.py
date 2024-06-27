@@ -15,7 +15,7 @@ def expired_reservations_cleaner(app: 'Flask', db: SQLAlchemy):
             func.datetime(Reservation.date, '+' + cast(Reservation.duration, String) + ' hours',
                           '+30 minutes')) <= datetime.now()) \
             .filter(Reservation.status.in_(
-            [ReservationStatusEnum.progress, ReservationStatusEnum.waiting, ReservationStatusEnum.not_allowed])) \
+            [ReservationStatusEnum.progress, ReservationStatusEnum.waiting])) \
             .all()
 
         for reservation in finished_reservations:
