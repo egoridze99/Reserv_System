@@ -1,14 +1,19 @@
-from datetime import datetime
+from datetime import datetime, time, timedelta
 
 from sqlalchemy import func, text, case
 
 from db import db
 from models import Transaction, Cinema, City, TransactionStatusEnum, TransactionTypeEnum
+from utils.convert_tz import convert_tz
 
 
 class CashierService:
     @staticmethod
     def __get_base_query(date: datetime.date, cinema_id: int):
+        cinema = Cinema.query.filter(Cinema.id == cinema_id).first()
+        min_date = convert_tz(datetime.combine(date, time(8)), cinema.city.timezone, True)
+        max_date = convert_tz(datetime.combine(date + timedelta(days=1), time(8)), cinema.city.timezone, True)
+
         subquery = (
             db.session.query(
                 func.sum(Transaction.sum).label("total_sum"),
@@ -33,7 +38,7 @@ class CashierService:
             .join(City)
             .filter(Transaction.cinema_id == cinema_id)
             .filter(Transaction.transaction_status == TransactionStatusEnum.completed)
-            .filter(text("""date(get_shift_date("transaction".created_at, city.timezone, 0)) = :target_date"""))
+            .filter(Transaction.created_at.between(min_date, max_date))
             .params(target_date=date)
             .subquery()
         )
@@ -43,6 +48,9 @@ class CashierService:
 
     @staticmethod
     def __get_cashier_start_base_query(date: datetime.date, cinema_id: int):
+        cinema = Cinema.query.filter(Cinema.id == cinema_id).first()
+        min_date = convert_tz(datetime.combine(date, time(8)), cinema.city.timezone, True)
+        
         return db.session.query(
             func.sum(Transaction.sum)
         ) \
@@ -50,7 +58,7 @@ class CashierService:
             .join(City) \
             .filter(Transaction.cinema_id == cinema_id) \
             .filter(Transaction.transaction_status == TransactionStatusEnum.completed) \
-            .filter(text("""date(get_shift_date("transaction".created_at, city.timezone, 0)) < :target_date""")) \
+            .filter(Transaction.created_at < min_date) \
             .filter(Transaction.transaction_type == TransactionTypeEnum.cash) \
             .params(target_date=date)
 

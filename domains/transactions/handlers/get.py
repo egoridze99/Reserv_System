@@ -1,10 +1,10 @@
 from flask import jsonify, request
-from sqlalchemy import func, text, or_
+from sqlalchemy import text, or_
 from sqlalchemy.orm import aliased
 
 from db import db
 from models import Reservation, Transaction, Certificate, Cinema, City, TransactionChangesLog
-from models.dictionaries import reservation_transaction_dict, certificate_transaction_dict
+from models.dictionaries import reservation_transaction_dict
 from utils.parse_date import parse_date
 
 

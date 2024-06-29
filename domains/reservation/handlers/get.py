@@ -1,23 +1,25 @@
-from datetime import datetime
+from datetime import datetime, time, timedelta
 
 from flask import request, jsonify, json
 from sqlalchemy import text
 
 from models import Reservation, Room, ReservationStatusEnum, Guest, UpdateLogs, Cinema, City
+from utils.convert_tz import convert_tz
 
 
 def get_reservations():
     room_id = request.args.get('room_id')
-    date = datetime.strptime(request.args.get('date'), '%Y-%m-%d').date()
     cinema_id = request.args.get('cinema_id')
+    date = datetime.strptime(request.args.get('date'), '%Y-%m-%d').date()
 
     if not date or not cinema_id:
         return {"message": "Не все данные"}, 400
 
-    reservations = Reservation.query.join(Room).join(Cinema).join(City).filter(
-        text(
-            "date(get_shift_date(reservation.date, city.timezone, reservation.duration)) = :target")).params(
-        target=date)
+    cinema = Cinema.query.filter(Cinema.id == cinema_id).first()
+    min_date = convert_tz(datetime.combine(date, time(8)), cinema.city.timezone, True)
+    max_date = convert_tz(datetime.combine(date + timedelta(days=1), time(8)), cinema.city.timezone, True)
+
+    reservations = Reservation.query.join(Room).join(Cinema).filter(Reservation.date.between(min_date, max_date))
 
     if not room_id:
         reservations = reservations.filter(Cinema.id == cinema_id).all()
