@@ -40,7 +40,7 @@ def update_reservation(reservation_id: str):
         if set_tz(reservation.date, MOSCOW_OFFSET) != new_date:
             return {"msg": "Дата уже прошла"}, 400
 
-        if reservation.duration < data['duration']:
+        if reservation.duration > data['duration']:
             return {"msg": "Вы пытаетесь уменьшить продолжительность резерва"}, 400
 
     certificate = None
