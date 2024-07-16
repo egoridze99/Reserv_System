@@ -36,12 +36,14 @@ def update_reservation(reservation_id: str):
                           room.cinema.city.timezone,
                           True)
 
-    if is_date_in_last(new_date) and role != EmployeeRoleEnum.root.value:
-        if set_tz(reservation.date, MOSCOW_OFFSET) != new_date:
-            return {"msg": "Дата уже прошла"}, 400
+    if is_date_in_last(new_date) and role != EmployeeRoleEnum.root.value and set_tz(reservation.date,
+                                                                                    MOSCOW_OFFSET) != new_date:
+        return {"msg": "Дата уже прошла"}, 400
 
-        if reservation.duration > data['duration']:
-            return {"msg": "Вы пытаетесь уменьшить продолжительность резерва"}, 400
+    if is_date_in_last(set_tz(reservation.date, MOSCOW_OFFSET) + timedelta(hours=reservation.duration,
+                                                                           minutes=30)) and reservation.duration > data[
+        "duration"]:
+        return {"msg": "Вы пытаетесь уменьшить продолжительность резерва"}, 400
 
     certificate = None
     certificate_ident = data["certificate_ident"]
