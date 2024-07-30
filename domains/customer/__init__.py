@@ -1,4 +1,4 @@
-from flask import Blueprint, request
+from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required
 
 from decorators import check_user_status, requires_admin
@@ -15,6 +15,21 @@ def get_users():
     telephone = args.get('telephone')
 
     return handlers.get_customer(telephone)
+
+
+@customer_blueprint.route('/id')
+@jwt_required
+@check_user_status
+def get_users_by_id():
+    args = request.args
+    ids = args.get('ids')
+
+    if not ids:
+        return jsonify([]), 200
+
+    ids = list(map(int, ids.split(',')))
+
+    return handlers.get_customer_by_id(ids)
 
 
 @customer_blueprint.route('/comments/<id>')

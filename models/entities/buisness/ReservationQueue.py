@@ -44,7 +44,7 @@ class ReservationQueue(AbstractBaseModel):
             'created_at': reservation.created_at.strftime('%Y-%m-%dT%H:%M'),
             'author': User.to_json(reservation.author),
             'rooms': [Room.to_json(room) for room in reservation.rooms],
-            'contact': Guest.to_json(reservation.contact),
+            'contact_id': reservation.contact.id,
             'view_by': [{"reservation_id": log.reservation.id,
                          "user": User.to_json(log.user),
                          "created_at": log.created_at.strftime('%Y-%m-%dT%H:%M')

@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 
 from flask import jsonify
 
@@ -21,6 +21,12 @@ def get_customer(telephone: Optional[str]):
         return jsonify([Guest.to_json(customer) for customer in all_customers])
 
     return jsonify([Guest.to_json(customer) for customer in Guest.query.limit(100).all()])
+
+
+def get_customer_by_id(ids: List[int]):
+    customers = Guest.query.filter(Guest.id.in_(ids)).all()
+
+    return jsonify([Guest.to_json(customer) for customer in customers])
 
 
 def get_customer_comments(customer_id):

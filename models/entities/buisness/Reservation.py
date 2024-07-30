@@ -57,5 +57,5 @@ class Reservation(AbstractBaseModel):
             'created_at': reservation.created_at.strftime(
                 '%Y-%m-%dT%H:%M') if reservation.created_at is not None else None,
             "certificate": Certificate.to_json(reservation.certificate) if reservation.certificate else None,
-            'guest': Guest.to_json(reservation.guest),
+            'guest_id': reservation.guest.id,
         }

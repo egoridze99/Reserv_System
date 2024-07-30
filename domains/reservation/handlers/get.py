@@ -1,7 +1,7 @@
 from datetime import datetime, time, timedelta
 
 from flask import request, jsonify, json
-from sqlalchemy import text
+from sqlalchemy import text, func, cast, String
 
 from models import Reservation, Room, ReservationStatusEnum, Guest, UpdateLogs, Cinema, City
 from utils.convert_tz import convert_tz
@@ -19,7 +19,9 @@ def get_reservations():
     min_date = convert_tz(datetime.combine(date, time(8)), cinema.city.timezone, True)
     max_date = convert_tz(datetime.combine(date + timedelta(days=1), time(8)), cinema.city.timezone, True)
 
-    reservations = Reservation.query.join(Room).join(Cinema).filter(Reservation.date.between(min_date, max_date))
+    reservations = Reservation.query.join(Room).join(Cinema).filter(
+        func.datetime(Reservation.date, '+' + cast(Reservation.duration, String) + ' hours').between(min_date,
+                                                                                                     max_date))
 
     if not room_id:
         reservations = reservations.filter(Cinema.id == cinema_id).all()
@@ -78,8 +80,7 @@ def search_reservations():
 
 
 def get_logs(reservation_id):
-    reservation = Reservation.query.filter(Reservation.id == reservation_id).first()
-    logs = UpdateLogs.query.filter(UpdateLogs.reservation_id == reservation.id).all()
+    logs = UpdateLogs.query.filter(UpdateLogs.reservation_id == reservation_id).all()
 
     logs = [UpdateLogs.to_json(log) for log in logs]
     logs.sort(key=lambda x: x['created_at'])

@@ -47,6 +47,6 @@ class Certificate(AbstractBaseModel):
             "note": certificate.note,
 
             "author": User.to_json(certificate.author),
-            "contact": Guest.to_json(certificate.contact),
+            "contact_id": certificate.contact.id,
             "cinema": Cinema.to_json(certificate.cinema)
         }

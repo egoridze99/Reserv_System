@@ -1,8 +1,9 @@
 from datetime import datetime, time, timedelta
 
 from flask import jsonify, request
-from sqlalchemy import text, or_
+from sqlalchemy import text, or_, func, cast, String, not_, and_
 from sqlalchemy.orm import aliased
+from sqlalchemy.sql import exists
 
 from db import db
 from models import Reservation, Transaction, Certificate, Cinema, City, TransactionChangesLog
@@ -48,19 +49,15 @@ def get_cinema_transactions(cinema_id: int):
         .filter((Transaction.cinema_id == cinema_id)) \
         .filter(or_(Transaction.created_at.between(min_date, max_date), Transaction.id.in_(subquery))) \
         .params(target=date) \
-        .filter(
-        text(
-            """iif(
-                get_shift_date(
-                reservation.date, 
-                city.timezone, 
-                reservation.duration),
-                date(
-                    get_shift_date(
-                        reservation.date, 
-                        city.timezone, 
-                        reservation.duration)) != :given_date, true)""")).params(
-        given_date=date) \
+        .filter(func.iif(exists().where(and_(Reservation.id == reservation_transaction_dict.c.reservation_id,
+                                             Transaction.id == reservation_transaction_dict.c.transaction_id)).correlate(
+        Transaction),
+                         not_(
+                             func.datetime(Reservation.date,
+                                           '+' + cast(Reservation.duration, String) + ' hours').between(min_date,
+                                                                                                        max_date)),
+                         True)
+                ) \
         .all()
 
     return jsonify([Transaction.to_json(transaction) for transaction in transactions]), 200
