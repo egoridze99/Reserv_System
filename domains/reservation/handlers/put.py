@@ -10,11 +10,13 @@ from domains.reservation.handlers.utils import check_not_payment, check_the_taki
     dump_reservation_to_update_log, search_available_items_from_queue
 from models import EmployeeRoleEnum, Reservation, Room, Guest, Certificate, CertificateStatusEnum, \
     ReservationStatusEnum, UpdateLogs, User, ReservationQueue, ReservationQueueViewLog
+from services.sbp_service import SbpServiceException
 from typings import UserJwtIdentity
 from utils.convert_tz import convert_tz
 from utils.is_date_in_last import is_date_in_last
 from utils.parse_json import parse_json
 from utils.set_tz import set_tz
+from utils.transactions.make_refund import make_refund
 
 
 def update_reservation(reservation_id: str):
@@ -45,27 +47,9 @@ def update_reservation(reservation_id: str):
             reservation.duration > data["duration"]:
         return {"msg": "Вы пытаетесь уменьшить продолжительность резерва"}, 400
 
-    certificate = None
-    certificate_ident = data["certificate_ident"]
-    if certificate_ident:
-        certificate: Optional['Certificate'] = Certificate.query.filter(Certificate.ident == certificate_ident).first()
-
-        if not certificate:
-            return jsonify({"msg": "Сертификат не найден"}), 404
-
-    if certificate and certificate != reservation.certificate:
-        if certificate.status != CertificateStatusEnum.active:
-            return {"msg": "Вы пытаетесь добавить погашенный сертификат"}, 400
-
-    if reservation.certificate and ReservationStatusEnum[data["status"]] == ReservationStatusEnum.canceled:
-        reservation.certificate_id = None
-
     if reservation.status == ReservationStatusEnum.finished:
         if role != EmployeeRoleEnum.root.name:
             return {"msg": "Нельзя изменять завершенные сеансы!"}, 400
-
-        if check_not_payment(role, reservation, data["rent"], certificate):
-            return {"msg": "Клиент не заплатил!"}, 400
 
     if reservation.date.date() < (datetime.now() - timedelta(days=1)).date() \
             and data['status'] != ReservationStatusEnum.finished.name \
@@ -90,6 +74,36 @@ def update_reservation(reservation_id: str):
 
     if check_the_taking(new_date, room, float(data['duration']), reservation.id):
         return {"msg": "Зал занят"}, 400
+
+    if ReservationStatusEnum[data['status']] == ReservationStatusEnum.canceled and EmployeeRoleEnum[
+        role] == EmployeeRoleEnum.root:
+        for transaction in reservation.transactions:
+            try:
+                if transaction.is_refund_available:
+                    transaction, log = make_refund(transaction, identity["name"])
+                    db.session.add(transaction)
+                    if log:
+                        db.session.add(log)
+            except SbpServiceException as e:
+                return jsonify({"msg": str(e)}), 400
+
+    certificate = None
+    certificate_ident = data["certificate_ident"]
+    if certificate_ident:
+        certificate: Optional['Certificate'] = Certificate.query.filter(Certificate.ident == certificate_ident).first()
+
+        if not certificate:
+            return jsonify({"msg": "Сертификат не найден"}), 404
+
+    if certificate and certificate != reservation.certificate:
+        if certificate.status != CertificateStatusEnum.active:
+            return {"msg": "Вы пытаетесь добавить погашенный сертификат"}, 400
+
+    if reservation.certificate and ReservationStatusEnum[data["status"]] == ReservationStatusEnum.canceled:
+        reservation.certificate_id = None
+
+        if check_not_payment(role, reservation, data["rent"], certificate):
+            return {"msg": "Клиент не заплатил!"}, 400
 
     if data['status'] == ReservationStatusEnum.finished.name:
         if certificate:

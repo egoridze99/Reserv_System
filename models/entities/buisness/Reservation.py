@@ -1,3 +1,4 @@
+from datetime import date
 from functools import reduce
 
 from sqlalchemy import func

@@ -18,6 +18,7 @@ from domains import references_blueprint, reservations_blueprint, money_blueprin
 
 from db import db
 from domains.transactions import transactions_blueprint
+from domains.webhook import webhook_blueprint
 from scheduler_jobs import expired_queue_item_cleaner, expired_reservations_cleaner
 from models import *
 from sqlite_functions.get_shift_date import get_shift_date
@@ -59,6 +60,7 @@ def create_app():
     flask_app.register_blueprint(user_blueprint, url_prefix='/api/user')
     flask_app.register_blueprint(customer_blueprint, url_prefix='/api/customer')
     flask_app.register_blueprint(transactions_blueprint, url_prefix='/api/transactions')
+    flask_app.register_blueprint(webhook_blueprint, url_prefix='/api/webhook')
 
     # CONFIGURING ADMIN PANEL
     admin_panel = Admin(flask_app, name='film_is_scheduler', template_mode='bootstrap3', url="/flask_admin_panel")

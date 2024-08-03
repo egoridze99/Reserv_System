@@ -3,7 +3,7 @@ from datetime import datetime, timedelta, timezone
 from constants.time import MOSCOW_OFFSET
 
 
-def convert_tz(date: 'datetime', tz: str, to_moscow: bool) -> datetime:
+def convert_tz(date: 'datetime', tz: str, to_moscow: bool = False) -> datetime:
     offset_hours, offset_minutes = map(int, tz.split(':'))
     offset = timedelta(hours=offset_hours, minutes=offset_minutes)
     tz = timezone(offset)

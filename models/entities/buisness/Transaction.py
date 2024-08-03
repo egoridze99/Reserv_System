@@ -1,3 +1,5 @@
+from datetime import date, datetime, timedelta, time
+
 import shortuuid
 from sqlalchemy import func
 from sqlalchemy.orm import backref
@@ -6,6 +8,7 @@ from db import db
 from models.abstract import AbstractBaseModel
 from models.entities.buisness.User import User
 from models.enums import TransactionStatusEnum, TransactionTypeEnum
+from utils.convert_tz import convert_tz
 
 
 class Transaction(AbstractBaseModel):
@@ -27,8 +30,12 @@ class Transaction(AbstractBaseModel):
     cinema = db.relationship("Cinema", backref=backref("transactions", uselist=True))
     author = db.relationship("User", backref=backref("transactions", uselist=True))
 
-    __reservation = db.relationship('Reservation', secondary='reservation_transaction_dict', cascade="all, delete")
-    __certificate = db.relationship('Certificate', secondary='certificate_transaction_dict', cascade="all, delete")
+    payment_url = db.Column(db.String, nullable=True)
+
+    __reservation = db.relationship('Reservation', secondary='reservation_transaction_dict', cascade="all, delete",
+                                    uselist=False)
+    __certificate = db.relationship('Certificate', secondary='certificate_transaction_dict', cascade="all, delete",
+                                    uselist=False)
 
     def __init__(cls, **kwargs):
         super().__init__(**kwargs)
@@ -36,9 +43,31 @@ class Transaction(AbstractBaseModel):
         if not cls.id:
             cls.id = Transaction.generate_id()
 
+    @property
+    def is_refund_available(self):
+        if self.__reservation:
+            transaction_local_date = convert_tz(self.created_at, self.cinema.city.timezone)
+            transaction_shift_date = (transaction_local_date - timedelta(days=1)).date() \
+                if transaction_local_date.time() < time(8) \
+                else transaction_local_date.date()
+
+            reservation_local_date = convert_tz(self.__reservation.date, self.cinema.city.timezone)
+            reservation_shift_date = (reservation_local_date - timedelta(days=1)).date() \
+                if (reservation_local_date + timedelta(hours=self.__reservation.duration)).time() < time(8) \
+                else reservation_local_date.date()
+
+            is_preorder = transaction_shift_date < reservation_shift_date
+
+            if not is_preorder:
+                return False
+
+            return (reservation_shift_date - transaction_shift_date).days > 2
+
+        return False
+
     @staticmethod
     def generate_id():
-        return shortuuid.ShortUUID().random(length=64)
+        return shortuuid.ShortUUID().random(length=40)
 
     @staticmethod
     def to_json(transaction: "Transaction"):
@@ -51,6 +80,7 @@ class Transaction(AbstractBaseModel):
             "author": User.to_json(transaction.author),
             "transaction_type": transaction.transaction_type.value,
             "transaction_status": transaction.transaction_status.value,
-            "related_reservation_id": transaction.__reservation[0].id if transaction.__reservation else None,
-            "related_certificate_id": transaction.__certificate[0].ident if transaction.__certificate else None
+            "related_reservation_id": transaction.__reservation.id if transaction.__reservation else None,
+            "related_certificate_id": transaction.__certificate.ident if transaction.__certificate else None,
+            "is_refund_available": transaction.is_refund_available
         }

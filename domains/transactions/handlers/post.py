@@ -1,34 +1,32 @@
-import json
-from datetime import datetime
-
 from flask import request, jsonify
 from flask_jwt_extended import get_jwt_identity
 
 from db import db
-from domains.transactions.handlers.utils.dump_transaction_to_json import dump_transaction_to_json
-from models import Transaction, Reservation, TransactionTypeEnum, TransactionStatusEnum, Cinema, TransactionChangesLog
+from models import Transaction, Reservation, Cinema
+from services.sbp_service import *
 from typings import UserJwtIdentity
 from utils.parse_json import parse_json
+from utils.transactions.create_transaction import create_transaction as create_transaction_model
+from utils.transactions.make_refund import make_refund as make_refund_global
 
 
 def make_refund(id: str):
     identity: 'UserJwtIdentity' = get_jwt_identity()
 
-    transaction = Transaction.query.filter_by(id=id).first()
+    transaction: "Transaction" = Transaction.query.filter_by(id=id).first()
 
     if not transaction:
         return jsonify({"msg": "Транзакция не найдена"}), 400
 
-    old_values = json.dumps(dump_transaction_to_json(transaction))
-    transaction.transaction_status = TransactionStatusEnum.refunded
-    new_values = json.dumps(dump_transaction_to_json(transaction))
-
-    log = TransactionChangesLog(transaction_id=transaction.id,
-                                author=identity["name"], new=new_values, old=old_values)
+    try:
+        transaction, log = make_refund_global(transaction, identity["name"])
+    except SbpServiceException as e:
+        return jsonify({"msg": str(e)}), 400
 
     try:
         db.session.add(transaction)
-        db.session.add(log)
+        if log:
+            db.session.add(log)
         db.session.commit()
         return jsonify({"msg": "ok"}), 200
     except:
@@ -54,19 +52,16 @@ def create_transaction():
 
     cinema = Cinema.query.filter(Cinema.id == cinema_id).first()
 
-    transaction_status = TransactionStatusEnum.pending
-    if TransactionTypeEnum[data["transaction_type"]] != TransactionTypeEnum.sbp:
-        transaction_status = TransactionStatusEnum.completed
-
-    transaction = Transaction(
-        sum=data['sum'],
-        created_at=datetime.now(),
-        description=data['description'],
-        cinema=cinema,
-        author_id=identity["id"],
-        transaction_type=data['transaction_type'],
-        transaction_status=transaction_status,
-    )
+    try:
+        transaction = create_transaction_model(
+            cinema,
+            data["transaction_type"],
+            data["sum"],
+            data["description"],
+            identity["id"]
+        )
+    except SbpServiceException as e:
+        return jsonify({"msg": str(e)}), 400
 
     if reservation:
         reservation.transactions.append(transaction)
@@ -77,7 +72,9 @@ def create_transaction():
     try:
         db.session.commit()
         return jsonify(Transaction.to_json(transaction)), 201
-    except:
+    except Exception as e:
+        print(e)
+
         return jsonify({"msg": "Ошибка при добавлении транзакции"}), 400
 
 

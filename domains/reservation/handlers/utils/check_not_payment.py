@@ -1,6 +1,6 @@
 from typing import Optional
 
-from models import EmployeeRoleEnum, Certificate, Reservation
+from models import EmployeeRoleEnum, Certificate, Reservation, TransactionStatusEnum
 
 
 def check_not_payment(role: EmployeeRoleEnum, reservation: 'Reservation', rent_price: int,
@@ -8,7 +8,9 @@ def check_not_payment(role: EmployeeRoleEnum, reservation: 'Reservation', rent_p
     if role == EmployeeRoleEnum.root.value:
         return False
 
-    sum_of_transactions = sum([t.sum for t in filter(lambda t: t.sum >= 0, reservation.transactions)])
+    sum_of_transactions = sum([t.sum for t in
+                               filter(lambda t: t.sum >= 0 and t.transaction_status == TransactionStatusEnum.completed,
+                                      reservation.transactions)])
 
     if certificate:
         sum_of_transactions += certificate.sum

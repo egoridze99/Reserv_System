@@ -1,11 +1,10 @@
-from datetime import datetime
-
 from flask import request, jsonify
 from flask_jwt_extended import get_jwt_identity
 
 from db import db
-from models import User, Guest, Cinema, Certificate, Transaction, TransactionTypeEnum, TransactionStatusEnum
+from models import User, Guest, Cinema, Certificate
 from utils.parse_json import parse_json
+from utils.transactions.create_transaction import create_transaction
 
 
 def create_certificate():
@@ -30,19 +29,11 @@ def create_certificate():
     transactions = data["transactions"]
     transaction_models = []
     for transaction in transactions:
-        status = TransactionStatusEnum.completed if TransactionTypeEnum[
-                                                        transaction[
-                                                            "transaction_type"]] != TransactionTypeEnum.sbp else TransactionStatusEnum.pending
-
-        transaction_model = Transaction(
-            created_at=datetime.now(),
-            sum=transaction["sum"],
-            description=f"Оплата сертификата {certificate.ident}",
-            transaction_type=transaction["transaction_type"],
-            transaction_status=status,
-            cinema=cinema,
-            author=author
-        )
+        transaction_model = create_transaction(cinema,
+                                               transaction["transaction_type"],
+                                               transaction["sum"],
+                                               f"Оплата сертификата {certificate.ident}",
+                                               author.id)
 
         transaction_models.append(transaction_model)
 

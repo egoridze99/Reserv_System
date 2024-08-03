@@ -1,6 +1,6 @@
 from datetime import datetime, time, timedelta
 
-from sqlalchemy import func, text, case
+from sqlalchemy import func, case
 
 from db import db
 from models import Transaction, Cinema, City, TransactionStatusEnum, TransactionTypeEnum
@@ -32,7 +32,12 @@ class CashierService:
                     case([(Transaction.sum >= 0,
                            case([(Transaction.transaction_type == TransactionTypeEnum.card, Transaction.sum)],
                                 else_=0))], else_=0)
-                ).label("card_sum")
+                ).label("card_sum"),
+                func.sum(
+                    case([(Transaction.sum >= 0,
+                           case([(Transaction.transaction_type == TransactionTypeEnum.sbp, Transaction.sum)],
+                                else_=0))], else_=0)
+                ).label("sbp_sum")
             )
             .join(Cinema)
             .join(City)
@@ -44,13 +49,13 @@ class CashierService:
         )
 
         return db.session.query(subquery.c.total_sum, subquery.c.income_sum, subquery.c.expense_sum,
-                                subquery.c.cash_sum, subquery.c.card_sum)
+                                subquery.c.cash_sum, subquery.c.card_sum, subquery.c.sbp_sum)
 
     @staticmethod
     def __get_cashier_start_base_query(date: datetime.date, cinema_id: int):
         cinema = Cinema.query.filter(Cinema.id == cinema_id).first()
         min_date = convert_tz(datetime.combine(date, time(8)), cinema.city.timezone, True)
-        
+
         return db.session.query(
             func.sum(Transaction.sum)
         ) \
@@ -75,6 +80,7 @@ class CashierService:
         proceeds = income + expense
         all_by_cash = base_data.cash_sum or 0
         all_by_card = base_data.card_sum or 0
+        all_by_sbp = base_data.sbp_sum or 0
         cashier_start = cashier_start_income + cashier_start_expense
         cashier_end = cashier_start + expense + all_by_cash
 
@@ -84,6 +90,7 @@ class CashierService:
             "proceeds": proceeds,
             "all_by_cash": all_by_cash,
             "all_by_card": all_by_card,
+            "all_by_sbp": all_by_sbp,
             "cashier_start": cashier_start,
             "cashier_end": cashier_end
         }
