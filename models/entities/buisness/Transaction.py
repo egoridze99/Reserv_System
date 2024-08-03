@@ -82,5 +82,6 @@ class Transaction(AbstractBaseModel):
             "transaction_status": transaction.transaction_status.value,
             "related_reservation_id": transaction.__reservation.id if transaction.__reservation else None,
             "related_certificate_id": transaction.__certificate.ident if transaction.__certificate else None,
+            "payment_url": transaction.payment_url,
             "is_refund_available": transaction.is_refund_available
         }
