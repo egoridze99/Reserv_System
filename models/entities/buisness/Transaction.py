@@ -45,23 +45,23 @@ class Transaction(AbstractBaseModel):
 
     @property
     def is_refund_available(self):
-        if self.__reservation:
-            transaction_local_date = convert_tz(self.created_at, self.cinema.city.timezone)
-            transaction_shift_date = (transaction_local_date - timedelta(days=1)).date() \
-                if transaction_local_date.time() < time(8) \
-                else transaction_local_date.date()
-
-            reservation_local_date = convert_tz(self.__reservation.date, self.cinema.city.timezone)
-            reservation_shift_date = (reservation_local_date - timedelta(days=1)).date() \
-                if (reservation_local_date + timedelta(hours=self.__reservation.duration)).time() < time(8) \
-                else reservation_local_date.date()
-
-            is_preorder = transaction_shift_date < reservation_shift_date
-
-            if not is_preorder:
-                return False
-
-            return (reservation_shift_date - transaction_shift_date).days >= 2
+        # if self.__reservation:
+        #     transaction_local_date = convert_tz(self.created_at, self.cinema.city.timezone)
+        #     transaction_shift_date = (transaction_local_date - timedelta(days=1)).date() \
+        #         if transaction_local_date.time() < time(8) \
+        #         else transaction_local_date.date()
+        #
+        #     reservation_local_date = convert_tz(self.__reservation.date, self.cinema.city.timezone)
+        #     reservation_shift_date = (reservation_local_date - timedelta(days=1)).date() \
+        #         if (reservation_local_date + timedelta(hours=self.__reservation.duration)).time() < time(8) \
+        #         else reservation_local_date.date()
+        #
+        #     is_preorder = transaction_shift_date < reservation_shift_date
+        #
+        #     if not is_preorder:
+        #         return False
+        #
+        #     return (reservation_shift_date - transaction_shift_date).days >= 2
 
         return False
 
