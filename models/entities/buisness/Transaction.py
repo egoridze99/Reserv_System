@@ -61,7 +61,7 @@ class Transaction(AbstractBaseModel):
             if not is_preorder:
                 return False
 
-            return (reservation_shift_date - transaction_shift_date).days > 2
+            return (reservation_shift_date - transaction_shift_date).days >= 2
 
         return False
 

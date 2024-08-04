@@ -10,6 +10,9 @@ def sbp_transaction_webhook():
     transaction_id = data["order"]["id"]
     status = data["status"]
 
+    if data["notification_type"] == "refund":
+        return "ok"
+
     transaction: "Transaction" = Transaction.query.filter_by(id=transaction_id).first()
 
     if status == "successful":
