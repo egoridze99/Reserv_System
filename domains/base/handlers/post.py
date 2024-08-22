@@ -1,13 +1,12 @@
 import hashlib
 from datetime import timedelta
 
-from flask import request, jsonify, json
-from flask_jwt_extended import create_access_token, get_jwt_identity
-
-from db import db
-from models import User, EmployeeRoleEnum, UserStatusEnum
-from utils.parse_json import parse_json
+from flask import request, jsonify
+from flask_jwt_extended import create_access_token
 from sqlalchemy import and_
+
+from models import User, UserStatusEnum
+from utils.parse_json import parse_json
 
 
 def login():

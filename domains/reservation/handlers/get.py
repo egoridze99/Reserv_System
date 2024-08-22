@@ -63,16 +63,18 @@ def search_reservations():
         reservation_query = reservation_query.filter(Guest.telephone.in_(telephones))
 
     if start_date:
-        start_date_as_date = datetime.strptime(start_date, '%Y-%m-%d').date()
-        reservation_query = reservation_query.filter(text(
-            "date(get_shift_date(reservation.date, city.timezone, reservation.duration)) >= :start_date")).params(
-            start_date=start_date_as_date)
+        start_date_as_date = datetime.combine(datetime.strptime(start_date, '%Y-%m-%d').date(), time(8))
+
+        reservation_query = reservation_query.filter(
+            func.datetime(func.datetime(Reservation.date, '+' + cast(Reservation.duration, String) + ' hours'),
+                          City.timezone) > start_date_as_date)
 
     if end_date:
-        end_date_as_date = datetime.strptime(end_date, '%Y-%m-%d')
-        reservation_query = reservation_query.filter(text(
-            "date(get_shift_date(reservation.date, city.timezone, reservation.duration)) <= :end_date")).params(
-            end_date=end_date_as_date)
+        end_date_as_date = datetime.combine(datetime.strptime(end_date, '%Y-%m-%d').date(), time(8)) + timedelta(days=1)
+
+        reservation_query = reservation_query.filter(
+            func.datetime(func.datetime(Reservation.date, '+' + cast(Reservation.duration, String) + ' hours'),
+                          City.timezone) < end_date_as_date)
 
     reservations = reservation_query.all()
 
