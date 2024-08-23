@@ -2,9 +2,11 @@ import re
 
 from flask import request, jsonify
 from flask_jwt_extended import get_jwt_identity
+from sqlalchemy import func
 
+from db import db
 from domains.admin.handlers.queries import *
-from models import EmployeeRoleEnum, Guest, Cinema
+from models import EmployeeRoleEnum, Guest, Cinema, Reservation, Room
 
 
 def get_common_info():
@@ -152,7 +154,46 @@ def get_common_info():
 
 def get_telephones():
     phone_pattern = r'[\+]?[78][\-]?[\d]{3}[\-]?[\d]{3}[\-]?[\d]{2}[\-]?[\d]{2}'
-    guests = Guest.query.all()
-    result = [guest.telephone for guest in guests if re.fullmatch(phone_pattern, guest.telephone)]
+
+    city = request.args.get('city')
+    min_visits = request.args.get('min_visits')
+    last_visit_threshold = request.args.get('last_visit_threshold')
+    ignore_before_date = request.args.get('ignore_before_date')
+
+    last_visit_subquery = (
+        db.session.query(
+            Reservation.guest_id,
+            func.max(Reservation.date).label('last_visit_date')
+        )
+        .group_by(Reservation.guest_id)
+        .subquery()
+    )
+
+    query = (
+        db.session.query(Guest)
+        .join(Reservation, Guest.id == Reservation.guest_id)
+        .join(Room, Reservation.room_id == Room.id)
+        .join(Cinema, Cinema.id == Room.cinema_id)
+        .join(last_visit_subquery, Guest.id == last_visit_subquery.c.guest_id)
+    )
+
+    if city is not None:
+        city = int(city)
+        query = query.filter(Cinema.city_id == city)
+
+    if last_visit_threshold is not None:
+        query = query.filter(last_visit_subquery.c.last_visit_date <= last_visit_threshold)
+
+    if ignore_before_date is not None:
+        query = query.filter(last_visit_subquery.c.last_visit_date >= ignore_before_date)
+
+    query = query.group_by(Guest.id)
+
+    if min_visits is not None:
+        min_visits = int(min_visits)
+        query = query.having(func.count(Reservation.id) >= min_visits)
+
+    result = query.all()
+    result = [guest.telephone for guest in result if re.fullmatch(phone_pattern, guest.telephone)]
 
     return jsonify({'data': result}), 200

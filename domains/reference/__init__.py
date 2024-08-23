@@ -13,6 +13,13 @@ def get_cinemas():
     return handlers.get_cinemas()
 
 
+@references_blueprint.route('/cities')
+@jwt_required
+@check_user_status
+def get_cities():
+    return handlers.get_cities()
+
+
 @references_blueprint.route('/is-authenticated')
 @jwt_required
 @check_user_status

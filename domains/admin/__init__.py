@@ -21,4 +21,3 @@ def get_common_info():
 @requires_admin
 def get_telephones():
     return handlers.get_telephones()
-

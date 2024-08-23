@@ -18,9 +18,6 @@ def get_reservation_money_query(until, till, is_income, is_refund=False):
     min_date = datetime.combine(until, time(8))
     max_date = datetime.combine(till + timedelta(days=1), time(8))
 
-    print(min_date)
-    print(max_date)
-
     subquery = session.query(
         Cinema.id.label('cinema_id'),
         Room.id.label('room_id'),
