@@ -5,7 +5,8 @@ from models import Cinema, City
 
 
 def get_cinemas():
-    cinemas = Cinema.query.all()
+    cinemas = Cinema.query.filter(Cinema.closed == 0).all()
+
     return jsonify([Cinema.to_json(cinema) for cinema in cinemas])
 
 

@@ -15,6 +15,8 @@ class Cinema(AbstractBaseModel):
     sbp_terminal = db.relationship("SbpTerminal", backref=backref("cinema", uselist=False))
     city = db.relationship("City", backref=backref("cinemas", uselist=True))
 
+    closed = db.Column(db.Boolean, default=False)
+
     def __str__(self):
         return "<Кинотеатр id={} адрес={}>".format(self.id, self.name)
 

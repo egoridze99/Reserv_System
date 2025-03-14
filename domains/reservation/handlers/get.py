@@ -44,6 +44,8 @@ def search_reservations():
     telephones: list[str] = request.args.get('telephones')
     start_date: str = request.args.get('date_from')
     end_date: str = request.args.get('date_to')
+    created_start_date: str = request.args.get('created_start_date')
+    created_end_date: str = request.args.get('created_end_date')
 
     reservation_query = Reservation.query.join(Room).join(Guest).join(Cinema).join(City)
 
@@ -75,6 +77,20 @@ def search_reservations():
         reservation_query = reservation_query.filter(
             func.datetime(func.datetime(Reservation.date, '+' + cast(Reservation.duration, String) + ' hours'),
                           City.timezone) < end_date_as_date)
+
+    if created_start_date:
+        created_start_date_as_date = datetime.combine(datetime.strptime(created_start_date, '%Y-%m-%d').date(), time(8))
+
+        reservation_query = reservation_query.filter(
+            func.datetime(func.datetime(Reservation.created_at), City.timezone) > created_start_date_as_date)
+
+    if created_end_date:
+        created_end_date_as_date = datetime.combine(datetime.strptime(created_end_date, '%Y-%m-%d').date(),
+                                                    time(8)) + timedelta(days=1)
+
+        reservation_query = reservation_query.filter(
+            func.datetime(func.datetime(Reservation.created_at),
+                          City.timezone) < created_end_date_as_date)
 
     reservations = reservation_query.all()
 
