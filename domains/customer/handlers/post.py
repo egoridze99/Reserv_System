@@ -24,7 +24,9 @@ def create_customer():
                        "passport_issued_by",
                        "passport_issue_date",
                        "department_code",
-                       "passport_identity"]
+                       "passport_identity",
+                       "gender"
+                       ]
 
     if data["birthday_date"] is not None:
         data["birthday_date"] = parse_date(data["birthday_date"])
