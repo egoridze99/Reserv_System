@@ -43,8 +43,6 @@ def get_cinema_money_query(until, till, is_income, is_refund=False):
         Transaction))) \
         .group_by(Cinema.id).subquery()
 
-    print(subquery)
-
     data = session.query(
         subquery.c.cinema_id,
         subquery.c.card,

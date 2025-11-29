@@ -42,7 +42,8 @@ def get_reservation_money_query(until, till, is_income, is_refund=False):
         func.datetime(Reservation.date, City.timezone).between(min_date, max_date)
     ).filter(Transaction.transaction_status == (
         TransactionStatusEnum.refunded.value if is_refund else TransactionStatusEnum.completed.value)) \
-        .filter(Transaction.sum > 0 if is_income else Transaction.sum < 0).group_by(Room.id).subquery()
+        .filter(Transaction.sum > 0 if is_income else Transaction.sum < 0).group_by(Room.id).group_by(
+        Cinema.id).subquery()
 
     data = session.query(
         subquery.c.cinema_id,
@@ -53,6 +54,16 @@ def get_reservation_money_query(until, till, is_income, is_refund=False):
         (func.coalesce(subquery.c.card, 0) + func.coalesce(subquery.c.cash, 0) + func.coalesce(subquery.c.sbp,
                                                                                                0)).label('sum')
     ).select_from(subquery).all()
+
+    print(session.query(
+        subquery.c.cinema_id,
+        subquery.c.room_id,
+        subquery.c.card,
+        subquery.c.cash,
+        subquery.c.sbp,
+        (func.coalesce(subquery.c.card, 0) + func.coalesce(subquery.c.cash, 0) + func.coalesce(subquery.c.sbp,
+                                                                                               0)).label('sum')
+    ).select_from(subquery))
 
     data = filter(lambda i: i.cinema_id is not None, data)
 
@@ -65,6 +76,9 @@ def get_reservation_money_query(until, till, is_income, is_refund=False):
         result_grouped_by_cinema_id[row.cinema_id].append(row)
 
     result = {}
+
+    if is_income and not is_refund:
+        print(result_grouped_by_cinema_id)
 
     for cinema_id, rooms in result_grouped_by_cinema_id.items():
         result[cinema_id] = {
