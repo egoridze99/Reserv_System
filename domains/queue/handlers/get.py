@@ -68,6 +68,8 @@ def search_in_queue():
     start_date: str = request.args.get('start_date')
     end_date: str = request.args.get('end_date')
     has_another_reservation: list[bool] = request.args.get('has_another_reservation')
+    created_start_date: str = request.args.get('created_start_date')
+    created_end_date: str = request.args.get('created_end_date')
 
     ReservationQueueAlias = aliased(ReservationQueue, name='rq_alias')
     queue_query = db.session.query(ReservationQueueAlias).join(Guest)
@@ -84,7 +86,7 @@ def search_in_queue():
         telephones = json.loads(telephones)
         queue_query = queue_query.filter(Guest.telephone.in_(telephones))
 
-    subquery = """date(
+    shift_date_subquery = """date(
                     get_shift_date(
                         rq_alias.start_date,
                         (select city.timezone from reservation_queue
@@ -99,11 +101,39 @@ def search_in_queue():
 
     if start_date:
         start_date_str = datetime.strptime(start_date, "%Y-%m-%d").date()
-        queue_query = queue_query.filter(text(f"""{subquery} >= :start_date""")).params(start_date=start_date_str)
+        queue_query = queue_query.filter(text(f"""{shift_date_subquery} >= :start_date""")).params(
+            start_date=start_date_str)
 
     if end_date:
         end_date_str = datetime.strptime(end_date, "%Y-%m-%d").date()
-        queue_query = queue_query.filter(text(f"""{subquery} <= :end_date""")).params(end_date=end_date_str)
+        queue_query = queue_query.filter(text(f"""{shift_date_subquery} <= :end_date""")).params(end_date=end_date_str)
+
+    timezone_subquery = """select 
+                                city.timezone from reservation_queue
+                            join queue_room on reservation_queue.id = queue_room.queue_id
+                            join room on queue_room.room_id = room.id
+                            join cinema on cinema.id = room.cinema_id
+                            join city on cinema.city_id = city.id
+                            where 
+                                reservation_queue.id = rq_alias.id
+                            group by city.id
+                            limit 1
+                           """
+
+    if created_start_date:
+        created_start_date_as_date = datetime.combine(datetime.strptime(created_start_date, '%Y-%m-%d').date(), time(8))
+
+        queue_query = queue_query.filter(
+            text(f"""datetime(datetime(rq_alias.created_at), ({timezone_subquery})) > :start_date""")).params(
+            start_date=created_start_date_as_date)
+
+    if created_end_date:
+        created_end_date_as_date = datetime.combine(datetime.strptime(created_end_date, '%Y-%m-%d').date(),
+                                                    time(8)) + timedelta(days=1)
+
+        queue_query = queue_query.filter(
+            text(f"""datetime(datetime(rq_alias.created_at), ({timezone_subquery})) < :end_date""")).params(
+            end_date=created_end_date_as_date)
 
     if has_another_reservation:
         has_another_reservation = json.loads(has_another_reservation)

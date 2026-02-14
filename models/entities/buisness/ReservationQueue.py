@@ -1,15 +1,12 @@
 from sqlalchemy import func
 
-from constants.time import MOSCOW_OFFSET
 from db import db
 from models.abstract import AbstractBaseModel
 from models.dictionaries import queue_room, queue_logs
-from models.entities.buisness import Guest
 from models.entities.buisness.Room import Room
 from models.entities.buisness.User import User
 from models.enums.QueueStatusEnum import QueueStatusEnum
 from utils.convert_tz import convert_tz
-from utils.reduce_city_from_rooms import reduce_city_from_rooms
 
 
 class ReservationQueue(AbstractBaseModel):

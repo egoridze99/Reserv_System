@@ -1,14 +1,16 @@
 # use python container image
-FROM python:3.7.2-stretch
+FROM python:3.12-slim
 
 # set the working directory of the image filesystem
-WORKDIR /backend
+WORKDIR /app
 
-# copy current directory to the working directory
-ADD . /backend
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir gunicorn
 
-# Install the python dependencies
-RUN pip install -r requirements.txt
+COPY . .
+
+EXPOSE 5000
 
 # start the uWSGI
-CMD ["uwsgi", "app.ini"]
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "wsgi:configure_application()"]
