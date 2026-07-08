@@ -9,10 +9,8 @@ class Cinema(AbstractBaseModel):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     name = db.Column(db.String(40), nullable=False)
 
-    sbp_terminal_id = db.Column(db.String, db.ForeignKey('sbp_terminal.id'))
     city_id = db.Column(db.Integer, db.ForeignKey('city.id'))
 
-    sbp_terminal = db.relationship("SbpTerminal", backref=backref("cinema", uselist=False))
     city = db.relationship("City", backref=backref("cinemas", uselist=True))
 
     closed = db.Column(db.Boolean, default=False)
@@ -26,6 +24,4 @@ class Cinema(AbstractBaseModel):
             "id": cinema.id,
             "name": cinema.name,
             "rooms": [Room.to_json(room) for room in cinema.rooms],
-
-            "sbp_terminal": cinema.sbp_terminal.id if cinema.sbp_terminal else None
         }

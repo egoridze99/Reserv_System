@@ -8,13 +8,14 @@ Create Date: 2024-05-14 13:45:43.263775
 from alembic import op
 import sqlalchemy as sa
 
-from models import Cinema, SbpTerminal
-
 # revision identifiers, used by Alembic.
 revision = 'd3935f203b2f'
 down_revision = '177798ad5ad1'
 branch_labels = None
 depends_on = None
+
+sbp_terminal_table = sa.table('sbp_terminal', sa.column('id', sa.String))
+cinema_table = sa.table('cinema', sa.column('id', sa.Integer), sa.column('sbp_terminal_id', sa.String))
 
 
 def upgrade():
@@ -28,13 +29,13 @@ def upgrade():
         batch_op.create_foreign_key(batch_op.f('fk_cinema_sbp_terminal_id_sbp_terminal'), 'sbp_terminal',
                                     ['sbp_terminal_id'], ['id'])
 
-    op.execute(sa.insert(SbpTerminal).values(id="ffc6b9622bb848499ae400613f6d0ee2"))
-    op.execute(sa.insert(SbpTerminal).values(id="ebacccd4512f4d1f8a78b85fa87b5122"))
-    op.execute(sa.insert(SbpTerminal).values(id="67bf8a1d73564a31a16651de1afe1943"))
+    op.execute(sbp_terminal_table.insert().values(id="ffc6b9622bb848499ae400613f6d0ee2"))
+    op.execute(sbp_terminal_table.insert().values(id="ebacccd4512f4d1f8a78b85fa87b5122"))
+    op.execute(sbp_terminal_table.insert().values(id="67bf8a1d73564a31a16651de1afe1943"))
 
-    op.execute(sa.update(Cinema).where(Cinema.id == 1).values(sbp_terminal_id="ffc6b9622bb848499ae400613f6d0ee2"))
-    op.execute(sa.update(Cinema).where(Cinema.id == 2).values(sbp_terminal_id="ebacccd4512f4d1f8a78b85fa87b5122"))
-    op.execute(sa.update(Cinema).where(Cinema.id == 3).values(sbp_terminal_id="67bf8a1d73564a31a16651de1afe1943"))
+    op.execute(cinema_table.update().where(cinema_table.c.id == 1).values(sbp_terminal_id="ffc6b9622bb848499ae400613f6d0ee2"))
+    op.execute(cinema_table.update().where(cinema_table.c.id == 2).values(sbp_terminal_id="ebacccd4512f4d1f8a78b85fa87b5122"))
+    op.execute(cinema_table.update().where(cinema_table.c.id == 3).values(sbp_terminal_id="67bf8a1d73564a31a16651de1afe1943"))
     # ### end Alembic commands ###
 
 

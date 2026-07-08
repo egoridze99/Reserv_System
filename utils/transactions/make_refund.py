@@ -17,6 +17,6 @@ def make_refund(transaction: 'Transaction', author_name: str):
                                 author=author_name, new=new_values, old=old_values)
 
     if transaction.transaction_type == TransactionTypeEnum.sbp:
-        SbpService.make_refund(transaction.alias, transaction.sum)
+        SbpService.make_refund(transaction.alias)
 
     return transaction, log

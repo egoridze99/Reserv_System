@@ -52,13 +52,16 @@ def create_transaction():
 
     cinema = Cinema.query.filter(Cinema.id == cinema_id).first()
 
+    customer_phone = reservation.guest.telephone if reservation and reservation.guest else None
+
     try:
         transaction = create_transaction_model(
             cinema,
             data["transaction_type"],
             data["sum"],
             data["description"],
-            identity["id"]
+            identity["id"],
+            customer_phone
         )
     except SbpServiceException as e:
         return jsonify({"msg": str(e)}), 400

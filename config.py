@@ -10,3 +10,7 @@ class Config:
     SECRET_KEY = 'Sy6e_r!^qwer.dedez'
     RENDER_AS_BATCH = True
     SCHEDULER_API_ENABLED = True
+
+    LIFEPAY_APIKEY = "10ee41ea51a80a6b0f5d59b58dd60c51"
+    LIFEPAY_LOGIN = "79145050385"
+    LIFEPAY_CALLBACK_URL = "http://185.4.73.70/api/webhook/sbp"

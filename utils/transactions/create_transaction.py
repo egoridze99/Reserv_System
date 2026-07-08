@@ -9,7 +9,8 @@ def create_transaction(
         transaction_type: str,
         amount: int,
         description: str,
-        author_id: int
+        author_id: int,
+        customer_phone: str = None
 ):
     transaction_status = TransactionStatusEnum.pending
     if TransactionTypeEnum[transaction_type] != TransactionTypeEnum.sbp:
@@ -26,7 +27,7 @@ def create_transaction(
     )
 
     if transaction.transaction_type == TransactionTypeEnum.sbp:
-        sbp_transaction = SbpService.create_payment(transaction.id, transaction.sum, cinema.sbp_terminal_id)
+        sbp_transaction = SbpService.create_payment(transaction.id, transaction.sum, customer_phone)
         transaction.alias = sbp_transaction["id"]
         transaction.payment_url = sbp_transaction["payment_url"]
 

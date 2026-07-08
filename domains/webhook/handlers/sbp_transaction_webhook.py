@@ -7,17 +7,17 @@ from utils.parse_json import parse_json
 
 def sbp_transaction_webhook():
     data = parse_json(request.data)
-    transaction_id = data["order"]["id"]
+    number = str(data["number"])
     status = data["status"]
 
-    if data["notification_type"] == "refund":
+    if data["type"] == "refund":
         return "ok"
 
-    transaction: "Transaction" = Transaction.query.filter_by(id=transaction_id).first()
+    transaction: "Transaction" = Transaction.query.filter_by(alias=number).first()
 
-    if status == "successful":
+    if status == "success":
         transaction.transaction_status = TransactionStatusEnum.completed
-    elif status == "error":
+    elif status == "fail":
         transaction.transaction_status = TransactionStatusEnum.rejected
     else:
         return "skip update"
