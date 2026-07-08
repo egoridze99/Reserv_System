@@ -2,11 +2,10 @@ from flask import request
 
 from db import db
 from models import Transaction, TransactionStatusEnum
-from utils.parse_json import parse_json
 
 
 def sbp_transaction_webhook():
-    data = parse_json(request.data)
+    data = request.get_json(silent=True, force=True) or request.form.to_dict()
     number = str(data["number"])
     status = data["status"]
 
