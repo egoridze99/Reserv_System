@@ -81,10 +81,10 @@ class SbpService:
         if data["code"] != 0:
             raise SbpServiceException(data["message"])
 
-        bill_status = data.get("data", {}).get("status")
+        bill_status = data.get("data", {}).get(str(payment_id), {}).get("status")
 
         if bill_status is None:
-            log(f"get_payment_status: no 'status' field in response data={data.get('data')}")
+            log(f"get_payment_status: no status for payment_id={payment_id} in response data={data.get('data')}")
 
         is_success = bill_status == BILL_STATUS_SUCCESS or bill_status == "success"
         return {"status": "successful" if is_success else "pending"}
