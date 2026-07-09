@@ -1,3 +1,5 @@
+import json
+
 from flask import request
 
 from db import db
@@ -8,8 +10,23 @@ def log(message: str):
     print(f"[sbp_transaction_webhook] {message}", flush=True)
 
 
+def _parse_payload():
+    json_data = request.get_json(silent=True, force=True)
+    if isinstance(json_data, dict) and "number" in json_data:
+        return json_data
+
+    form_data = request.form.to_dict()
+    if "data" in form_data:
+        try:
+            return json.loads(form_data["data"])
+        except (TypeError, ValueError):
+            log(f"failed to parse form field 'data' as JSON: {form_data['data']}")
+
+    return form_data or json_data or {}
+
+
 def sbp_transaction_webhook():
-    data = request.get_json(silent=True, force=True) or request.form.to_dict()
+    data = _parse_payload()
 
     log(f"incoming request: method={request.method} content_type={request.content_type} "
         f"headers={dict(request.headers)} raw_body={request.get_data(as_text=True)} parsed={data}")
