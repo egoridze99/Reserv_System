@@ -11,6 +11,10 @@ class SbpServiceException(Exception):
     pass
 
 
+def log(message: str):
+    print(f"[SbpService] {message}", flush=True)
+
+
 class SbpService:
 
     @staticmethod
@@ -52,6 +56,8 @@ class SbpService:
         response = requests.post('https://api.life-pay.ru/v1/bill', json=payload)
         data = response.json()
 
+        log(f"create_payment: status_code={response.status_code} response={data}")
+
         if data["code"] != 0:
             raise SbpServiceException(data["message"])
 
@@ -70,11 +76,18 @@ class SbpService:
         response = requests.get('https://api.life-pay.ru/v1/bill/status', params=params)
         data = response.json()
 
+        log(f"get_payment_status: payment_id={payment_id} status_code={response.status_code} response={data}")
+
         if data["code"] != 0:
             raise SbpServiceException(data["message"])
 
-        status = "successful" if data["data"]["status"] == BILL_STATUS_SUCCESS else "pending"
-        return {"status": status}
+        bill_status = data.get("data", {}).get("status")
+
+        if bill_status is None:
+            log(f"get_payment_status: no 'status' field in response data={data.get('data')}")
+
+        is_success = bill_status == BILL_STATUS_SUCCESS or bill_status == "success"
+        return {"status": "successful" if is_success else "pending"}
 
     @staticmethod
     def cancel_payment(payment_id: str):
@@ -86,6 +99,8 @@ class SbpService:
         response = requests.post('https://api.life-pay.ru/v1/bill/cancellation', json=payload)
         data = response.json()
 
+        log(f"cancel_payment: payment_id={payment_id} status_code={response.status_code} response={data}")
+
         if data["code"] != 0:
             raise SbpServiceException(data["message"])
 
@@ -94,6 +109,8 @@ class SbpService:
     @staticmethod
     def make_refund(payment_id: str):
         transaction = SbpService.get_payment_status(payment_id)
+
+        log(f"make_refund: payment_id={payment_id} status_check={transaction}")
 
         if transaction["status"] != "successful":
             return SbpService.cancel_payment(payment_id)
@@ -105,6 +122,8 @@ class SbpService:
 
         response = requests.post('https://api.life-pay.ru/v1/transactions/refund', json=payload)
         data = response.json()
+
+        log(f"make_refund: refund request payment_id={payment_id} status_code={response.status_code} response={data}")
 
         if data["code"] != 0:
             raise SbpServiceException(data["message"])
