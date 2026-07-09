@@ -27,7 +27,7 @@ def create_transaction(
     )
 
     if transaction.transaction_type == TransactionTypeEnum.sbp:
-        sbp_transaction = SbpService.create_payment(transaction.id, transaction.sum, customer_phone)
+        sbp_transaction = SbpService.create_payment(transaction.sum, customer_phone)
         transaction.alias = sbp_transaction["id"]
         transaction.payment_url = sbp_transaction["payment_url"]
 

@@ -35,11 +35,11 @@ class SbpService:
         return digits
 
     @staticmethod
-    def create_payment(transaction_id: str, amount: int, customer_phone: str = None):
+    def create_payment(amount: int, customer_phone: str = None):
         payload = {
             **SbpService._credentials(),
             "amount": f"{amount:.2f}",
-            "description": f"Оплата заказа {transaction_id}",
+            "description": f"Оплата заказа в частном кинотеатре Film Is",
             "method": "sbp",
             "callback_url": Config.LIFEPAY_CALLBACK_URL,
         }
