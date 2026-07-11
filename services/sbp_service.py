@@ -43,7 +43,7 @@ class SbpService:
         payload = {
             **SbpService._credentials(),
             "amount": f"{amount:.2f}",
-            "description": f"Оплата заказа в частном кинотеатре Film Is",
+            "description": f"Оплата услуг клининга по площади",
             "method": "sbp",
             "callback_url": Config.LIFEPAY_CALLBACK_URL,
         }
