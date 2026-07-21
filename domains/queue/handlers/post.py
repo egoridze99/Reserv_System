@@ -5,6 +5,7 @@ from flask_jwt_extended import get_jwt_identity
 
 from constants.time import MOSCOW_OFFSET
 from db import db
+from domains.queue.handlers.utils import compute_queue_dates
 from models import User, Guest, Room, ReservationQueue
 from utils.convert_tz import convert_tz
 from utils.parse_json import parse_json
@@ -38,10 +39,16 @@ def create_reservation_in_queue():
         end_date = date + timedelta(days=1) if end_time < start_time else date
         end_date = convert_tz(datetime.combine(end_date, end_time), city.timezone or MOSCOW_OFFSET, True)
 
+    duration_end_date, window_end_date, shift_date = compute_queue_dates(
+        start_date, end_date, data['duration'], city.timezone)
+
     queue_item = ReservationQueue(
         start_date=start_date,
         end_date=end_date,
         duration=data['duration'],
+        duration_end_date=duration_end_date,
+        window_end_date=window_end_date,
+        shift_date=shift_date,
         guests_count=data['guests_count'],
         has_another_reservation=data['has_another_reservation'],
         note=data['note'],

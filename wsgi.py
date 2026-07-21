@@ -21,7 +21,6 @@ from domains.transactions import transactions_blueprint
 from domains.webhook import webhook_blueprint
 from scheduler_jobs import expired_queue_item_cleaner, expired_reservations_cleaner
 from models import *
-from sqlite_functions.get_shift_date import get_shift_date
 
 
 def get_application_port():
@@ -100,7 +99,10 @@ def configure_application(no_scheduler=False):
 
     @event.listens_for(Engine, "connect")
     def connect(dbapi_connection, _):
-        dbapi_connection.create_function("get_shift_date", 3, get_shift_date)
+        cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA journal_mode=WAL")
+        cursor.execute("PRAGMA busy_timeout=20000")
+        cursor.close()
 
     if not no_scheduler:
         scheduler = configure_scheduler(app, db)

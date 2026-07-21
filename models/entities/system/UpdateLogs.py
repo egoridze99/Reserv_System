@@ -8,7 +8,7 @@ from models.abstract import AbstractBaseModel
 
 class UpdateLogs(AbstractBaseModel):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    reservation_id = db.Column(db.Integer, db.ForeignKey("reservation.id", name="reservation_id"))
+    reservation_id = db.Column(db.Integer, db.ForeignKey("reservation.id", name="reservation_id"), index=True)
     created_at = db.Column(db.DateTime, default=func.localtimestamp())
     author = db.Column(db.String)
 

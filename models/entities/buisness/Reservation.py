@@ -1,7 +1,7 @@
-from datetime import date
+from datetime import timedelta
 from functools import reduce
 
-from sqlalchemy import func
+from sqlalchemy import event, func
 
 from db import db
 from models.enums.TransactionStatusEnum import TransactionStatusEnum
@@ -17,6 +17,9 @@ class Reservation(AbstractBaseModel):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     date = db.Column(db.DateTime, nullable=False)
     duration = db.Column(db.Integer, nullable=False)
+    # Материализованное date + duration часов, поддерживается автоматически через before_insert/before_update ниже.
+    # Нужна, чтобы фильтровать по окончанию резерва через индекс, а не через вычисляемое выражение на каждой строке.
+    end_date = db.Column(db.DateTime, nullable=False, index=True)
     count = db.Column(db.Integer)  # Кол-во гостей
     room_id = db.Column(db.Integer, db.ForeignKey('room.id', name="room_id"))
     guest_id = db.Column(db.Integer, db.ForeignKey('guest.id', name="guest_id"))
@@ -60,3 +63,9 @@ class Reservation(AbstractBaseModel):
             "certificate": Certificate.to_json(reservation.certificate) if reservation.certificate else None,
             'guest_id': reservation.guest.id,
         }
+
+
+@event.listens_for(Reservation, "before_insert")
+@event.listens_for(Reservation, "before_update")
+def _sync_reservation_end_date(mapper, connection, target: 'Reservation'):
+    target.end_date = target.date + timedelta(hours=target.duration)

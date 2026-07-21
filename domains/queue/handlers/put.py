@@ -4,6 +4,7 @@ from flask import request
 
 from constants.time import MOSCOW_OFFSET
 from db import db
+from domains.queue.handlers.utils import compute_queue_dates
 from models import Guest, ReservationQueue, Room, QueueStatusEnum
 from utils.convert_tz import convert_tz
 from utils.parse_json import parse_json
@@ -39,9 +40,15 @@ def edit_queue_item(id: int):
         end_date = date + timedelta(days=1) if end_time < start_time else date
         end_date = convert_tz(datetime.combine(end_date, end_time), city.timezone or MOSCOW_OFFSET, True)
 
+    duration_end_date, window_end_date, shift_date = compute_queue_dates(
+        start_date, end_date, data["duration"], city.timezone)
+
     queue_item.start_date = start_date
     queue_item.end_date = end_date
     queue_item.duration = data["duration"]
+    queue_item.duration_end_date = duration_end_date
+    queue_item.window_end_date = window_end_date
+    queue_item.shift_date = shift_date
     queue_item.guests_count = data["guests_count"]
     queue_item.has_another_reservation = data["has_another_reservation"]
     queue_item.note = data["note"]

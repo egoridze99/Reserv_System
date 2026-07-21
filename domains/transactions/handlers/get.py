@@ -1,7 +1,7 @@
 from datetime import datetime, time, timedelta
 
 from flask import jsonify, request
-from sqlalchemy import text, or_, func, cast, String, not_, and_
+from sqlalchemy import text, or_, func, not_, and_
 from sqlalchemy.orm import aliased
 from sqlalchemy.sql import exists
 
@@ -52,10 +52,7 @@ def get_cinema_transactions(cinema_id: int):
         .filter(func.iif(exists().where(and_(Reservation.id == reservation_transaction_dict.c.reservation_id,
                                              Transaction.id == reservation_transaction_dict.c.transaction_id)).correlate(
         Transaction),
-                         not_(
-                             func.datetime(Reservation.date,
-                                           '+' + cast(Reservation.duration, String) + ' hours').between(min_date,
-                                                                                                        max_date)),
+                         not_(Reservation.end_date.between(min_date, max_date)),
                          True)
                 ) \
         .all()
@@ -64,8 +61,9 @@ def get_cinema_transactions(cinema_id: int):
 
 
 def get_logs(transaction_id: str):
-    logs = TransactionChangesLog.query.filter(TransactionChangesLog.transaction_id == transaction_id).all()
-    logs = [TransactionChangesLog.to_json(log) for log in logs]
-    logs.sort(key=lambda x: x['created_at'])
+    logs = TransactionChangesLog.query \
+        .filter(TransactionChangesLog.transaction_id == transaction_id) \
+        .order_by(TransactionChangesLog.created_at) \
+        .all()
 
-    return jsonify(logs)
+    return jsonify([TransactionChangesLog.to_json(log) for log in logs])

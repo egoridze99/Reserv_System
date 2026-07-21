@@ -42,8 +42,9 @@ def get_customer_comments(customer_id):
 
 
 def get_logs(customer_id: int):
-    logs = GuestChangesLogs.query.filter(GuestChangesLogs.guest_id == customer_id).all()
-    logs = [GuestChangesLogs.to_json(log) for log in logs]
-    logs.sort(key=lambda x: x['created_at'])
+    logs = GuestChangesLogs.query \
+        .filter(GuestChangesLogs.guest_id == customer_id) \
+        .order_by(GuestChangesLogs.created_at) \
+        .all()
 
-    return jsonify(logs)
+    return jsonify([GuestChangesLogs.to_json(log) for log in logs])

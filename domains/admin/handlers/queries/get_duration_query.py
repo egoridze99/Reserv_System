@@ -1,7 +1,7 @@
 from datetime import datetime, time, timedelta
 from functools import reduce
 
-from sqlalchemy import func, cast, String
+from sqlalchemy import func
 
 from db import db
 from models import Room, Cinema, Reservation, City, ReservationStatusEnum
@@ -24,8 +24,7 @@ def get_duration_query(until, till):
         .join(Room, Reservation.room_id == Room.id) \
         .join(Cinema, Room.cinema_id == Cinema.id) \
         .join(City, Cinema.city_id == City.id) \
-        .filter(func.datetime(func.datetime(Reservation.date, '+' + cast(Reservation.duration, String) + ' hours'),
-                              City.timezone).between(min_date, max_date)) \
+        .filter(func.datetime(Reservation.end_date, City.timezone).between(min_date, max_date)) \
         .filter(Reservation.status == ReservationStatusEnum.finished) \
         .group_by(Reservation.room_id).all()
 

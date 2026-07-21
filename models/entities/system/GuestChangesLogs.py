@@ -9,7 +9,7 @@ from models.abstract import AbstractBaseModel
 class GuestChangesLogs(AbstractBaseModel):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
 
-    guest_id = db.Column(db.Integer, db.ForeignKey("guest.id", name="guest_id"))
+    guest_id = db.Column(db.Integer, db.ForeignKey("guest.id", name="guest_id"), index=True)
     created_at = db.Column(db.DateTime, default=func.localtimestamp())
     author = db.Column(db.String)
 

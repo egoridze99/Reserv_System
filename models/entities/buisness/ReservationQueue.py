@@ -14,6 +14,15 @@ class ReservationQueue(AbstractBaseModel):
     start_date = db.Column(db.DateTime)
     end_date = db.Column(db.DateTime)
     duration = db.Column(db.Integer, nullable=False)
+
+    # Служебные поля ниже не отдаются наружу через to_json — они только для фильтрации в
+    # get_queue()/search_in_queue() и заполняются в domains/queue/handlers/{post,put}.py.
+    # Раньше эти величины пересчитывались на каждой строке в рантайме (substr/cast по строке
+    # таймзоны, кастомная sqlite-функция get_shift_date с питон-коллбэком на каждую строку) —
+    # теперь считаются один раз при записи и хранятся, чтобы фильтрация была по индексу.
+    duration_end_date = db.Column(db.DateTime, nullable=False, index=True)  # start_date + duration
+    window_end_date = db.Column(db.DateTime, nullable=False, index=True)  # (end_date или start_date) + duration
+    shift_date = db.Column(db.Date, nullable=False, index=True)  # день смены (с 8:00 до 8:00), см. get_shift_date
     contact_id = db.Column(db.Integer, db.ForeignKey("guest.id", name="contact_id"))
     guests_count = db.Column(db.Integer, nullable=False)
     has_another_reservation = db.Column(db.Boolean, default=False, nullable=False)

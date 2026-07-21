@@ -9,7 +9,7 @@ from models.abstract import AbstractBaseModel
 class TransactionChangesLog(AbstractBaseModel):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
 
-    transaction_id = db.Column(db.Integer, db.ForeignKey("transaction.id", name="transaction_id"))
+    transaction_id = db.Column(db.Integer, db.ForeignKey("transaction.id", name="transaction_id"), index=True)
     created_at = db.Column(db.DateTime, default=func.localtimestamp())
     author = db.Column(db.String)
 

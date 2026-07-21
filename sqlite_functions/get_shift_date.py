@@ -1,24 +1,18 @@
-from datetime import timedelta, time, datetime
+from datetime import date as date_cls, datetime, time, timedelta
 
 from utils.convert_tz import convert_tz
 
 
-def get_shift_date(date_str: str, timezone: str, duration: int):
-    if date_str is None:
-        return None
+def get_shift_date(start_date: datetime, timezone: str, duration: float) -> date_cls:
+    """Возвращает дату "смены" (рабочего дня), к которой относится начало брони.
 
-    try:
-        try:
-            date = datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S.%f")
-        except ValueError:
-            date = datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S")
+    Смена длится с 8:00 до 8:00 следующего дня, поэтому бронь, начинающаяся
+    и заканчивающаяся до 8:00, всё ещё относится к предыдущей смене.
+    """
+    local_date = convert_tz(start_date, timezone, False)
+    finish_date = local_date + timedelta(hours=duration)
 
-        date = convert_tz(date, timezone, False)
-        finish_date = date + timedelta(hours=duration)
+    if finish_date.time() < time(8) and local_date.date() == finish_date.date():
+        return (local_date - timedelta(days=1)).date()
 
-        if finish_date.time() < time(8) and date.date() == finish_date.date():
-            return (date - timedelta(days=1)).strftime("%Y-%m-%d %H:%M:%S")
-
-        return date.date().strftime("%Y-%m-%d %H:%M:%S")
-    except Exception as e:
-        print(f"Error in get_shift_date: {e}")
+    return local_date.date()

@@ -1,7 +1,7 @@
 from datetime import datetime, time, timedelta
 
 from flask import request, jsonify, json
-from sqlalchemy import text, func, cast, String
+from sqlalchemy import text, func
 
 from models import Reservation, Room, ReservationStatusEnum, Guest, UpdateLogs, Cinema, City
 from utils.convert_tz import convert_tz
@@ -20,8 +20,7 @@ def get_reservations():
     max_date = convert_tz(datetime.combine(date + timedelta(days=1), time(8)), cinema.city.timezone, True)
 
     reservations = Reservation.query.join(Room).join(Cinema).filter(
-        func.datetime(Reservation.date, '+' + cast(Reservation.duration, String) + ' hours').between(min_date,
-                                                                                                     max_date))
+        Reservation.end_date.between(min_date, max_date))
 
     if not room_id:
         reservations = reservations.filter(Cinema.id == cinema_id).all()
@@ -68,15 +67,13 @@ def search_reservations():
         start_date_as_date = datetime.combine(datetime.strptime(start_date, '%Y-%m-%d').date(), time(8))
 
         reservation_query = reservation_query.filter(
-            func.datetime(func.datetime(Reservation.date, '+' + cast(Reservation.duration, String) + ' hours'),
-                          City.timezone) > start_date_as_date)
+            func.datetime(Reservation.end_date, City.timezone) > start_date_as_date)
 
     if end_date:
         end_date_as_date = datetime.combine(datetime.strptime(end_date, '%Y-%m-%d').date(), time(8)) + timedelta(days=1)
 
         reservation_query = reservation_query.filter(
-            func.datetime(func.datetime(Reservation.date, '+' + cast(Reservation.duration, String) + ' hours'),
-                          City.timezone) < end_date_as_date)
+            func.datetime(Reservation.end_date, City.timezone) < end_date_as_date)
 
     if created_start_date:
         created_start_date_as_date = datetime.combine(datetime.strptime(created_start_date, '%Y-%m-%d').date(), time(8))
@@ -98,9 +95,9 @@ def search_reservations():
 
 
 def get_logs(reservation_id):
-    logs = UpdateLogs.query.filter(UpdateLogs.reservation_id == reservation_id).all()
+    logs = UpdateLogs.query \
+        .filter(UpdateLogs.reservation_id == reservation_id) \
+        .order_by(UpdateLogs.created_at) \
+        .all()
 
-    logs = [UpdateLogs.to_json(log) for log in logs]
-    logs.sort(key=lambda x: x['created_at'])
-
-    return jsonify(logs)
+    return jsonify([UpdateLogs.to_json(log) for log in logs])

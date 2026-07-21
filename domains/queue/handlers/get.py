@@ -1,9 +1,8 @@
 from datetime import datetime, timedelta, time
 
 from flask import request, jsonify, json
-from sqlalchemy import func, String, Integer, text
+from sqlalchemy import func, text
 from sqlalchemy.orm import aliased
-from sqlalchemy.sql.elements import Cast
 
 from db import db
 from models import ReservationQueue, QueueStatusEnum, Room, Guest, Cinema, City
@@ -19,6 +18,11 @@ def get_queue():
     if not date:
         return {"message": "Не все данные"}, 400
 
+    # window_end_or_start и duration_end_date/window_end_date материализованы в
+    # ReservationQueue (см. compute_queue_dates) — раньше start_date/end_date + duration
+    # пересчитывались на каждой строке через substr/cast по строке таймзоны.
+    window_end_or_start = func.IIF(ReservationQueue.end_date, ReservationQueue.end_date, ReservationQueue.start_date)
+
     queue = ReservationQueue \
         .query \
         .join(queue_room) \
@@ -27,28 +31,14 @@ def get_queue():
         .join(City) \
         .filter(
         (
-                (func.date(ReservationQueue.start_date, func.substr(City.timezone, 0, 4) + " hours") == date) & (
-                func.datetime(
-                    ReservationQueue.start_date,
-                    "+" + Cast(ReservationQueue.duration + Cast(func.substr(City.timezone, 0, 4), Integer),
-                               String) + " hours"
-                ) > datetime.combine(date, time(8)))) |
-        (func.datetime(
-            func.IIF(
-                ReservationQueue.end_date,
-                ReservationQueue.end_date,
-                ReservationQueue.start_date
-            ),
-            "+" + Cast(ReservationQueue.duration + Cast(func.substr(City.timezone, 0, 4), Integer),
-                       String) + " hours"
-        ) <= datetime.combine(date + timedelta(days=1), time(8))) &
-        (date + timedelta(days=1) == func.date(
-            func.IIF(
-                ReservationQueue.end_date,
-                ReservationQueue.end_date,
-                ReservationQueue.start_date
-            ), func.substr(City.timezone, 0, 4) + " hours")
-         )
+                (func.date(func.datetime(ReservationQueue.start_date, City.timezone)) == date) &
+                (func.datetime(ReservationQueue.duration_end_date, City.timezone) > datetime.combine(date, time(8)))
+        ) |
+        (
+                (func.datetime(ReservationQueue.window_end_date, City.timezone) <= datetime.combine(
+                    date + timedelta(days=1), time(8))) &
+                (date + timedelta(days=1) == func.date(func.datetime(window_end_or_start, City.timezone)))
+        )
     )
 
     # Я хз как через алхимию такой фильтр сделать, фильтрую силами питона
@@ -86,27 +76,16 @@ def search_in_queue():
         telephones = json.loads(telephones)
         queue_query = queue_query.filter(Guest.telephone.in_(telephones))
 
-    shift_date_subquery = """date(
-                    get_shift_date(
-                        rq_alias.start_date,
-                        (select city.timezone from reservation_queue
-                            join queue_room on reservation_queue.id = queue_room.queue_id
-                            join room on queue_room.room_id = room.id
-                            join cinema on cinema.id = room.cinema_id
-                            join city on cinema.city_id = city.id
-                        where reservation_queue.id = rq_alias.id
-                        group by city.id
-                        limit 1),
-                        rq_alias.duration))"""
-
+    # shift_date материализован в ReservationQueue (см. compute_queue_dates) — раньше
+    # считался на каждой строке через кастомную sqlite-функцию get_shift_date с питон-коллбэком
+    # и коррелированный подзапрос room->cinema->city на каждый вызов.
     if start_date:
         start_date_str = datetime.strptime(start_date, "%Y-%m-%d").date()
-        queue_query = queue_query.filter(text(f"""{shift_date_subquery} >= :start_date""")).params(
-            start_date=start_date_str)
+        queue_query = queue_query.filter(ReservationQueueAlias.shift_date >= start_date_str)
 
     if end_date:
         end_date_str = datetime.strptime(end_date, "%Y-%m-%d").date()
-        queue_query = queue_query.filter(text(f"""{shift_date_subquery} <= :end_date""")).params(end_date=end_date_str)
+        queue_query = queue_query.filter(ReservationQueueAlias.shift_date <= end_date_str)
 
     timezone_subquery = """select 
                                 city.timezone from reservation_queue
