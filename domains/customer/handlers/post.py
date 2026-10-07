@@ -3,17 +3,27 @@ from flask import request
 from db import db
 from models import Guest
 from utils.parse_date import parse_date
-from utils.parse_json import parse_json
+
+
+def prepare_customer_data(data: dict):
+    """Проверяет обязательные поля и приводит даты к date. Возвращает ответ с ошибкой или None"""
+    if data["telephone"] is None or data["name"] is None:
+        return {"msg": "Имя и номер телефона обязательные аттрибуты"}, 400
+
+    for field in ("birthday_date", "passport_issue_date"):
+        if data[field] is not None:
+            data[field] = parse_date(data[field])
 
 
 def create_customer():
-    data = parse_json(request.data)
+    data = request.get_json(force=True)
 
     if Guest.query.filter(Guest.telephone == data['telephone']).first() is not None:
         return {"msg": "Пользователь с таким номером телефона уже есть в системе"}, 400
 
-    if data["telephone"] is None or data["name"] is None:
-        return {"msg": "Имя и номер телефона обязательные аттрибуты"}, 400
+    error = prepare_customer_data(data)
+    if error:
+        return error
 
     customer = Guest(name=data["name"], telephone=data["telephone"])
 
@@ -27,12 +37,6 @@ def create_customer():
                        "passport_identity",
                        "gender"
                        ]
-
-    if data["birthday_date"] is not None:
-        data["birthday_date"] = parse_date(data["birthday_date"])
-
-    if data["passport_issue_date"] is not None:
-        data["passport_issue_date"] = parse_date(data["passport_issue_date"])
 
     for field in optional_fields:
         if data[field] is not None:

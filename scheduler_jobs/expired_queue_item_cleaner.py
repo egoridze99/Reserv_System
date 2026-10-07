@@ -3,7 +3,6 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import func
 
-from db import db
 from models import ReservationQueue, QueueStatusEnum
 
 
@@ -20,6 +19,5 @@ def expired_queue_item_cleaner(app: 'Flask', db: SQLAlchemy):
 
         for reservation in reservations:
             reservation.status = QueueStatusEnum.expired
-            db.session.add(reservation)
 
         db.session.commit()

@@ -1,17 +1,13 @@
-from datetime import date, datetime, timedelta, time
-
 import shortuuid
 from sqlalchemy import func
 from sqlalchemy.orm import backref
 
 from db import db
-from models.abstract import AbstractBaseModel
 from models.entities.buisness.User import User
 from models.enums import TransactionStatusEnum, TransactionTypeEnum
-from utils.convert_tz import convert_tz
 
 
-class Transaction(AbstractBaseModel):
+class Transaction(db.Model):
     __tablename__ = 'transaction'
 
     id = db.Column(db.String, primary_key=True)
@@ -45,24 +41,7 @@ class Transaction(AbstractBaseModel):
 
     @property
     def is_refund_available(self):
-        # if self.__reservation:
-        #     transaction_local_date = convert_tz(self.created_at, self.cinema.city.timezone)
-        #     transaction_shift_date = (transaction_local_date - timedelta(days=1)).date() \
-        #         if transaction_local_date.time() < time(8) \
-        #         else transaction_local_date.date()
-        #
-        #     reservation_local_date = convert_tz(self.__reservation.date, self.cinema.city.timezone)
-        #     reservation_shift_date = (reservation_local_date - timedelta(days=1)).date() \
-        #         if (reservation_local_date + timedelta(hours=self.__reservation.duration)).time() < time(8) \
-        #         else reservation_local_date.date()
-        #
-        #     is_preorder = transaction_shift_date < reservation_shift_date
-        #
-        #     if not is_preorder:
-        #         return False
-        #
-        #     return (reservation_shift_date - transaction_shift_date).days >= 2
-
+        # Возвраты отключены. Прежнее правило (предзаказ, оплаченный за 2+ смены до резерва) — в истории git
         return False
 
     @staticmethod

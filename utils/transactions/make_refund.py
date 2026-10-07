@@ -1,7 +1,7 @@
 import json
 
 from models import Transaction, TransactionStatusEnum, TransactionChangesLog, TransactionTypeEnum
-from services.sbp_service import SbpService
+from services import sbp_service
 from utils.transactions.dump_transaction_to_json import dump_transaction_to_json
 
 
@@ -17,6 +17,6 @@ def make_refund(transaction: 'Transaction', author_name: str):
                                 author=author_name, new=new_values, old=old_values)
 
     if transaction.transaction_type == TransactionTypeEnum.sbp:
-        SbpService.make_refund(transaction.alias)
+        sbp_service.make_refund(transaction.alias)
 
     return transaction, log

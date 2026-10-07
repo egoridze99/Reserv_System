@@ -1,7 +1,7 @@
 from datetime import datetime, time, timedelta
 
 from flask import request, jsonify, json
-from sqlalchemy import text, func
+from sqlalchemy import func
 
 from models import Reservation, Room, ReservationStatusEnum, Guest, UpdateLogs, Cinema, City
 from utils.convert_tz import convert_tz

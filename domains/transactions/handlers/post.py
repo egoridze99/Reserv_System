@@ -3,9 +3,8 @@ from flask_jwt_extended import get_jwt_identity
 
 from db import db
 from models import Transaction, Reservation, Cinema
-from services.sbp_service import *
+from services.sbp_service import SbpServiceException
 from typings import UserJwtIdentity
-from utils.parse_json import parse_json
 from utils.transactions.create_transaction import create_transaction as create_transaction_model
 from utils.transactions.make_refund import make_refund as make_refund_global
 
@@ -35,7 +34,7 @@ def make_refund(id: str):
 
 def create_transaction():
     identity: UserJwtIdentity = get_jwt_identity()
-    data = parse_json(request.data)
+    data = request.get_json(force=True)
 
     reservation_id = None
     if 'reservation_id' in data:

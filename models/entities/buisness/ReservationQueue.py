@@ -1,7 +1,6 @@
 from sqlalchemy import func
 
 from db import db
-from models.abstract import AbstractBaseModel
 from models.dictionaries import queue_room, queue_logs
 from models.entities.buisness.Room import Room
 from models.entities.buisness.User import User
@@ -9,7 +8,7 @@ from models.enums.QueueStatusEnum import QueueStatusEnum
 from utils.convert_tz import convert_tz
 
 
-class ReservationQueue(AbstractBaseModel):
+class ReservationQueue(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     start_date = db.Column(db.DateTime)
     end_date = db.Column(db.DateTime)

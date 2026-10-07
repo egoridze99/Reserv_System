@@ -1,10 +1,9 @@
 from db import db
-from models.abstract import AbstractBaseModel
 from models.enums.UserStatusEnum import UserStatusEnum
 from models.enums.EmployeeRoleEnum import EmployeeRoleEnum
 
 
-class User(AbstractBaseModel):
+class User(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     login = db.Column(db.String(40), nullable=False)
     password = db.Column(db.String(200), nullable=False)

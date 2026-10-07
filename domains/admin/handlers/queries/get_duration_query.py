@@ -1,23 +1,14 @@
-from datetime import datetime, time, timedelta
-from functools import reduce
-
 from sqlalchemy import func
 
 from db import db
 from models import Room, Cinema, Reservation, City, ReservationStatusEnum
+from utils.parse_date import parse_shift_range
 
 
 def get_duration_query(until, till):
-    db_session = db.session
+    min_date, max_date = parse_shift_range(until, till)
 
-    until = datetime.strptime(until, "%Y-%m-%d")
-    if till:
-        till = datetime.strptime(till, "%Y-%m-%d")
-
-    min_date = datetime.combine(until, time(8))
-    max_date = datetime.combine(till + timedelta(days=1), time(8))
-
-    durations = db_session.query(
+    durations = db.session.query(
         Cinema.id.label("cinema_id"),
         Room.id.label('room_id'),
         func.sum(Reservation.duration).label("sum")) \
@@ -28,26 +19,11 @@ def get_duration_query(until, till):
         .filter(Reservation.status == ReservationStatusEnum.finished) \
         .group_by(Reservation.room_id).all()
 
-    durations_grouped_by_cinema_id = {}
-
-    for row in durations:
-        if row.cinema_id not in durations_grouped_by_cinema_id:
-            durations_grouped_by_cinema_id[row.cinema_id] = []
-
-        durations_grouped_by_cinema_id[row.cinema_id].append(row)
-
     result = {}
 
-    for cinema_id, rooms in durations_grouped_by_cinema_id.items():
-        result[cinema_id] = {
-            "cinema_id": cinema_id,
-            "sum": sum([room.sum for room in rooms]),
-        }
-
-        for room in rooms:
-            if 'rooms' not in result[cinema_id]:
-                result[cinema_id]['rooms'] = {}
-
-            result[cinema_id]['rooms'][room.room_id] = room.sum
+    for row in durations:
+        cinema = result.setdefault(row.cinema_id, {"cinema_id": row.cinema_id, "sum": 0, "rooms": {}})
+        cinema["sum"] += row.sum
+        cinema["rooms"][row.room_id] = row.sum
 
     return result

@@ -1,21 +1,28 @@
 import re
 
 from flask import request, jsonify
-from flask_jwt_extended import get_jwt_identity
 from sqlalchemy import func
 
 from db import db
 from domains.admin.handlers.queries import *
-from models import EmployeeRoleEnum, Guest, Cinema, Reservation, Room
+from models import Guest, Cinema, Reservation, Room
+
+
+PAYMENT_KEYS = ('cash', 'card', 'sbp', 'total')
+
+
+def _cinema_room(source, cinema_id, room_id):
+    return source.get(cinema_id, {}).get('rooms', {}).get(room_id)
+
+
+def _split_total(by_reservations, by_cinema, cinema_id):
+    reservations = by_reservations.get(cinema_id, {}).get('total') or 0
+    cinema = by_cinema.get(cinema_id, {}).get('total') or 0
+
+    return {"reservations": reservations, "cinema": cinema, 'total': reservations + cinema}
 
 
 def get_common_info():
-    identity = get_jwt_identity()
-    role = identity["role"]
-
-    if EmployeeRoleEnum[role] != EmployeeRoleEnum.root:
-        return {"message": "Недостаточно прав"}, 403
-
     until = request.args.get('until')
     till = request.args.get('till')
 
@@ -44,107 +51,46 @@ def get_common_info():
 
         if cinema.id in reservations_income or cinema.id in cinema_income:
             is_cinema_filled = True
-            cinema_data["income"] = dict()
+            income = {}
 
-            all_by_card = 0
-            all_by_cash = 0
-            all_by_sbp = 0
-            total = 0
+            for name, source in (("reservations", reservations_income), ("cinema", cinema_income)):
+                if cinema.id in source:
+                    income[name] = {key: source[cinema.id][key] for key in PAYMENT_KEYS}
 
-            if cinema.id in reservations_income:
-                all_by_card += reservations_income[cinema.id]['card'] or 0
-                all_by_cash += reservations_income[cinema.id]['cash'] or 0
-                all_by_sbp += reservations_income[cinema.id]['sbp'] or 0
-                total += reservations_income[cinema.id]['total'] or 0
-
-                cinema_data["income"]["reservations"] = {
-                    'cash': reservations_income[cinema.id]['cash'],
-                    'card': reservations_income[cinema.id]['card'],
-                    'sbp': reservations_income[cinema.id]['sbp'],
-                    'total': reservations_income[cinema.id]['total']
-                }
-
-            if cinema.id in cinema_income:
-                all_by_card += cinema_income[cinema.id]['card'] or 0
-                all_by_cash += cinema_income[cinema.id]['cash'] or 0
-                all_by_sbp += cinema_income[cinema.id]['sbp'] or 0
-                total += cinema_income[cinema.id]['total'] or 0
-
-                cinema_data["income"]["cinema"] = {
-                    'cash': cinema_income[cinema.id]['cash'],
-                    'card': cinema_income[cinema.id]['card'],
-                    'sbp': cinema_income[cinema.id]['sbp'],
-                    'total': cinema_income[cinema.id]['total']
-                }
-
-            cinema_data["income"]['total'] = {
-                'cash': all_by_cash,
-                'card': all_by_card,
-                'sbp': all_by_sbp,
-                'total': total
-            }
+            income['total'] = {key: sum(part[key] or 0 for part in income.values()) for key in PAYMENT_KEYS}
+            cinema_data["income"] = income
 
         if cinema.id in reservations_expense or cinema.id in cinema_expense:
             is_cinema_filled = True
-
-            cinema_reservations_expense = 0
-            if cinema.id in reservations_expense:
-                cinema_reservations_expense = reservations_expense[cinema.id]['total'] or 0
-
-            current_cinema_expense = 0
-            if cinema.id in cinema_expense:
-                current_cinema_expense = cinema_expense[cinema.id]['total'] or 0
-
-            cinema_data["expense"] = {"reservations": cinema_reservations_expense,
-                                      "cinema": current_cinema_expense,
-                                      'total': cinema_reservations_expense + current_cinema_expense}
+            cinema_data["expense"] = _split_total(reservations_expense, cinema_expense, cinema.id)
 
         if cinema.id in reservation_refunds or cinema.id in cinema_refunds:
             is_cinema_filled = True
-
-            cinema_reservations_refunds = 0
-            if cinema.id in reservation_refunds:
-                cinema_reservations_refunds = reservation_refunds[cinema.id]['total'] or 0
-
-            current_cinema_refunds = 0
-            if cinema.id in cinema_refunds:
-                current_cinema_refunds = cinema_refunds[cinema.id]['total'] or 0
-
-            cinema_data["refunds"] = {"reservations": cinema_reservations_refunds, "cinema": current_cinema_refunds,
-                                      'total': cinema_reservations_refunds + current_cinema_refunds}
+            cinema_data["refunds"] = _split_total(reservation_refunds, cinema_refunds, cinema.id)
 
         for room in cinema.rooms:
-            is_room_filled = False
-
             room_data = {'room_id': room.id, 'room_name': room.name}
 
-            if cinema.id in durations and room.id in durations[cinema.id]['rooms']:
-                is_room_filled = True
-                room_data['total_duration'] = durations[cinema.id]['rooms'][room.id]
+            duration = _cinema_room(durations, cinema.id, room.id)
+            income = _cinema_room(reservations_income, cinema.id, room.id)
+            expense = _cinema_room(reservations_expense, cinema.id, room.id)
+            refunds = _cinema_room(reservation_refunds, cinema.id, room.id)
 
-            if cinema.id in reservations_income and room.id in reservations_income[cinema.id]['rooms']:
-                is_room_filled = True
+            if duration is not None:
+                room_data['total_duration'] = duration
 
-                room_data["income"] = {
-                    'cash': reservations_income[cinema.id]['rooms'][room.id]['cash'],
-                    'card': reservations_income[cinema.id]['rooms'][room.id]['card'],
-                    'sbp': reservations_income[cinema.id]['rooms'][room.id]['sbp'],
-                    'total': reservations_income[cinema.id]['rooms'][room.id]['total']
-                }
+            if income:
+                room_data["income"] = income
 
-            if cinema.id in reservations_expense and room.id in reservations_expense[cinema.id]['rooms']:
-                is_room_filled = True
-                room_data["expense"] = reservations_expense[cinema.id]['rooms'][room.id]['total']
+            if expense:
+                room_data["expense"] = expense['total']
 
-            if cinema.id in reservation_refunds and room.id in reservation_refunds[cinema.id]['rooms']:
+            if refunds:
                 is_cinema_filled = True
-                room_data["refunds"] = reservation_refunds[cinema.id]['rooms'][room.id]['total']
+                room_data["refunds"] = refunds['total']
 
-            if is_room_filled:
-                if 'rooms' not in cinema_data:
-                    cinema_data['rooms'] = []
-
-                cinema_data['rooms'].append(room_data)
+            if duration is not None or income or expense:
+                cinema_data.setdefault('rooms', []).append(room_data)
 
         if is_cinema_filled:
             result.append(cinema_data)

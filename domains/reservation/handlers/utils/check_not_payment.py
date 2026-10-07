@@ -8,9 +8,8 @@ def check_not_payment(role: EmployeeRoleEnum, reservation: 'Reservation', rent_p
     if role == EmployeeRoleEnum.root.value:
         return False
 
-    sum_of_transactions = sum([t.sum for t in
-                               filter(lambda t: t.sum >= 0 and t.transaction_status == TransactionStatusEnum.completed,
-                                      reservation.transactions)])
+    sum_of_transactions = sum(t.sum for t in reservation.transactions
+                              if t.sum >= 0 and t.transaction_status == TransactionStatusEnum.completed)
 
     if certificate:
         sum_of_transactions += certificate.sum

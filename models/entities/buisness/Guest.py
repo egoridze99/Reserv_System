@@ -1,10 +1,9 @@
-from models.abstract import AbstractBaseModel
 from db import db
 from models.dictionaries import guest_comment_dict
 from models.enums import GenderEnum
 
 
-class Guest(AbstractBaseModel):
+class Guest(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
 
     name = db.Column(db.String(40), nullable=False)

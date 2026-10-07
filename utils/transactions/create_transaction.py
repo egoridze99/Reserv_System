@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from models import TransactionStatusEnum, TransactionTypeEnum, Cinema, Transaction
-from services.sbp_service import SbpService, SbpServiceException
+from services import sbp_service
 
 
 def create_transaction(
@@ -27,7 +27,7 @@ def create_transaction(
     )
 
     if transaction.transaction_type == TransactionTypeEnum.sbp:
-        sbp_transaction = SbpService.create_payment(transaction.sum, customer_phone)
+        sbp_transaction = sbp_service.create_payment(transaction.sum, customer_phone)
         transaction.alias = sbp_transaction["id"]
         transaction.payment_url = sbp_transaction["payment_url"]
 

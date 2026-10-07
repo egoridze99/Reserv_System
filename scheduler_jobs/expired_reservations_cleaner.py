@@ -21,6 +21,4 @@ def expired_reservations_cleaner(app: 'Flask', db: SQLAlchemy):
             if reservation.certificate:
                 reservation.certificate.status = CertificateStatusEnum.redeemed
 
-            db.session.add(reservation)
-
         db.session.commit()

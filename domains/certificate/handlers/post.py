@@ -3,12 +3,11 @@ from flask_jwt_extended import get_jwt_identity
 
 from db import db
 from models import User, Guest, Cinema, Certificate
-from utils.parse_json import parse_json
 from utils.transactions.create_transaction import create_transaction
 
 
 def create_certificate():
-    data = parse_json(request.data)
+    data = request.get_json(force=True)
 
     author = User.query.filter(User.id == get_jwt_identity()["id"]).first()
     guest = Guest.query.filter(Guest.id == data["contact"]).first()

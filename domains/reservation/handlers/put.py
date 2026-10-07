@@ -14,13 +14,12 @@ from services.sbp_service import SbpServiceException
 from typings import UserJwtIdentity
 from utils.convert_tz import convert_tz
 from utils.is_date_in_last import is_date_in_last
-from utils.parse_json import parse_json
 from utils.set_tz import set_tz
 from utils.transactions.make_refund import make_refund
 
 
 def update_reservation(reservation_id: str):
-    data = parse_json(request.data)
+    data = request.get_json(force=True)
     identity: 'UserJwtIdentity' = get_jwt_identity()
 
     role = identity["role"]

@@ -11,8 +11,6 @@ class Config:
     JWT_SECRET_KEY = 'Sy6e_r!^qwer.dedez'
     FLASK_ADMIN_SWATCH = 'cerulean'
     SECRET_KEY = 'Sy6e_r!^qwer.dedez'
-    RENDER_AS_BATCH = True
-    SCHEDULER_API_ENABLED = True
 
     LIFEPAY_APIKEY = "10ee41ea51a80a6b0f5d59b58dd60c51"
     LIFEPAY_LOGIN = "79145050385"

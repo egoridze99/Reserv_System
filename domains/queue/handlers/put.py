@@ -1,18 +1,13 @@
-from datetime import datetime, timedelta, time
-
 from flask import request
 
-from constants.time import MOSCOW_OFFSET
 from db import db
 from domains.queue.handlers.utils import compute_queue_dates
 from models import Guest, ReservationQueue, Room, QueueStatusEnum
-from utils.convert_tz import convert_tz
-from utils.parse_json import parse_json
 from utils.reduce_city_from_rooms import reduce_city_from_rooms
 
 
 def edit_queue_item(id: int):
-    data = parse_json(request.data)
+    data = request.get_json(force=True)
 
     queue_item: 'ReservationQueue' = ReservationQueue.query.filter_by(id=id).first()
 
@@ -26,29 +21,15 @@ def edit_queue_item(id: int):
     if contact is None:
         return {"msg": "Пользователь не найден"}, 400
 
-    date = datetime.strptime(f"{data['date']}", '%Y-%m-%d')
-    start_time = datetime.strptime(data['start_time'], '%H:%M').time()
-    end_time = datetime.strptime(data["end_time"], '%H:%M').time() if data["end_time"] else None
+    dates = compute_queue_dates(data, city.timezone)
 
-    start_date = convert_tz(datetime.combine(date, start_time), city.timezone or MOSCOW_OFFSET, True)
-    end_date = None
+    if dates is None:
+        return {"msg": "Неверный временной диапазон"}, 400
 
-    if end_time:
-        if start_time > end_time > time(8):
-            return {"msg": "Неверный временной диапазон"}, 400
+    for field, value in dates.items():
+        setattr(queue_item, field, value)
 
-        end_date = date + timedelta(days=1) if end_time < start_time else date
-        end_date = convert_tz(datetime.combine(end_date, end_time), city.timezone or MOSCOW_OFFSET, True)
-
-    duration_end_date, window_end_date, shift_date = compute_queue_dates(
-        start_date, end_date, data["duration"], city.timezone)
-
-    queue_item.start_date = start_date
-    queue_item.end_date = end_date
     queue_item.duration = data["duration"]
-    queue_item.duration_end_date = duration_end_date
-    queue_item.window_end_date = window_end_date
-    queue_item.shift_date = shift_date
     queue_item.guests_count = data["guests_count"]
     queue_item.has_another_reservation = data["has_another_reservation"]
     queue_item.note = data["note"]

@@ -4,8 +4,7 @@ from flask_admin import Admin
 from flask_admin.contrib.sqla import ModelView
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
-from flask_migrate import Migrate, MigrateCommand
-from flask_script import Manager
+from flask_migrate import Migrate
 import sys
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import event
@@ -13,25 +12,20 @@ from sqlalchemy.engine import Engine
 
 from config import Config
 
-from domains import references_blueprint, reservations_blueprint, money_blueprint, certificate_blueprint, \
-    queue_blueprint, base_blueprint, admin_blueprint, user_blueprint, customer_blueprint
-
 from db import db
+from domains.admin import admin_blueprint
+from domains.base import base_blueprint
+from domains.certificate import certificate_blueprint
+from domains.customer import customer_blueprint
+from domains.money import money_blueprint
+from domains.queue import queue_blueprint
+from domains.reference import references_blueprint
+from domains.reservation import reservations_blueprint
 from domains.transactions import transactions_blueprint
+from domains.user import user_blueprint
 from domains.webhook import webhook_blueprint
 from scheduler_jobs import expired_queue_item_cleaner, expired_reservations_cleaner
 from models import *
-
-
-def get_application_port():
-    port = 5000
-
-    try:
-        port = sys.argv[1]
-    except IndexError:
-        print("Порт не задан. Используется порт по умолчанию")
-
-    return port
 
 
 def create_app():
@@ -39,14 +33,12 @@ def create_app():
     flask_app = Flask(__name__)
     flask_app.config.from_object(Config)
     CORS(flask_app)
-    jwt = JWTManager(flask_app)
+    JWTManager(flask_app)
 
     db.init_app(flask_app)
 
     # CONFIGURING MIGRATIONS
-    migrate = Migrate(flask_app, db, render_as_batch=True)
-    manager = Manager(flask_app)
-    manager.add_command('db', MigrateCommand)
+    Migrate(flask_app, db, render_as_batch=True)
 
     # MAPPING ROUTES
     flask_app.register_blueprint(base_blueprint, url_prefix='/api')
@@ -115,4 +107,4 @@ def configure_application(no_scheduler=False):
 if __name__ == '__main__':
     app = configure_application(no_scheduler=True)
 
-    app.run(port=get_application_port())
+    app.run(port=sys.argv[1] if len(sys.argv) > 1 else 5000)

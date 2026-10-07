@@ -4,6 +4,7 @@ import requests
 
 from config import Config
 
+API_URL = 'https://api.life-pay.ru/v1'
 BILL_STATUS_SUCCESS = 10
 
 
@@ -15,117 +16,74 @@ def log(message: str):
     print(f"[SbpService] {message}", flush=True)
 
 
-class SbpService:
+def _call(http_method: str, path: str, /, **params):
+    payload = {"apikey": Config.LIFEPAY_APIKEY, "login": Config.LIFEPAY_LOGIN, **params}
+    payload_kwarg = {"params": payload} if http_method == "get" else {"json": payload}
 
-    @staticmethod
-    def _credentials():
-        return {
-            "apikey": Config.LIFEPAY_APIKEY,
-            "login": Config.LIFEPAY_LOGIN,
-        }
+    response = getattr(requests, http_method)(f"{API_URL}/{path}", **payload_kwarg)
+    data = response.json()
 
-    @staticmethod
-    def _format_phone(phone: str):
-        digits = re.sub(r'\D', '', phone)
+    log(f"{path}: params={params} status_code={response.status_code} response={data}")
 
-        if len(digits) == 11 and digits[0] == '8':
-            digits = '7' + digits[1:]
-        elif len(digits) == 10:
-            digits = '7' + digits
+    if data["code"] != 0:
+        raise SbpServiceException(data["message"])
 
-        if len(digits) != 11 or digits[0] != '7':
-            return None
+    return data
 
-        return digits
 
-    @staticmethod
-    def create_payment(amount: int, customer_phone: str = None):
-        payload = {
-            **SbpService._credentials(),
-            "amount": f"{amount:.2f}",
-            "description": f"Оплата услуг клининга по площади",
-            "method": "sbp",
-            "callback_url": Config.LIFEPAY_CALLBACK_URL,
-        }
+def _format_phone(phone: str):
+    digits = re.sub(r'\D', '', phone)
 
-        if customer_phone:
-            formatted_phone = SbpService._format_phone(customer_phone)
-            if formatted_phone:
-                payload["customer_phone"] = formatted_phone
+    if len(digits) == 11 and digits[0] == '8':
+        digits = '7' + digits[1:]
+    elif len(digits) == 10:
+        digits = '7' + digits
 
-        response = requests.post('https://api.life-pay.ru/v1/bill', json=payload)
-        data = response.json()
+    if len(digits) != 11 or digits[0] != '7':
+        return None
 
-        log(f"create_payment: status_code={response.status_code} response={data}")
+    return digits
 
-        if data["code"] != 0:
-            raise SbpServiceException(data["message"])
 
-        return {
-            "id": str(data["data"]["number"]),
-            "payment_url": data["data"]["paymentUrl"],
-        }
+def create_payment(amount: int, customer_phone: str = None):
+    params = {
+        "amount": f"{amount:.2f}",
+        "description": "Оплата услуг клининга по площади",
+        "method": "sbp",
+        "callback_url": Config.LIFEPAY_CALLBACK_URL,
+    }
 
-    @staticmethod
-    def get_payment_status(payment_id: str):
-        params = {
-            **SbpService._credentials(),
-            "number": payment_id,
-        }
+    formatted_phone = _format_phone(customer_phone) if customer_phone else None
+    if formatted_phone:
+        params["customer_phone"] = formatted_phone
 
-        response = requests.get('https://api.life-pay.ru/v1/bill/status', params=params)
-        data = response.json()
+    bill = _call("post", "bill", **params)["data"]
 
-        log(f"get_payment_status: payment_id={payment_id} status_code={response.status_code} response={data}")
+    return {"id": str(bill["number"]), "payment_url": bill["paymentUrl"]}
 
-        if data["code"] != 0:
-            raise SbpServiceException(data["message"])
 
-        bill_status = data.get("data", {}).get(str(payment_id), {}).get("status")
+def get_payment_status(payment_id: str):
+    data = _call("get", "bill/status", number=payment_id)
+    bill_status = data.get("data", {}).get(str(payment_id), {}).get("status")
 
-        if bill_status is None:
-            log(f"get_payment_status: no status for payment_id={payment_id} in response data={data.get('data')}")
+    if bill_status is None:
+        log(f"get_payment_status: no status for payment_id={payment_id} in response data={data.get('data')}")
 
-        is_success = bill_status == BILL_STATUS_SUCCESS or bill_status == "success"
-        return {"status": "successful" if is_success else "pending"}
+    is_success = bill_status == BILL_STATUS_SUCCESS or bill_status == "success"
+    return {"status": "successful" if is_success else "pending"}
 
-    @staticmethod
-    def cancel_payment(payment_id: str):
-        payload = {
-            **SbpService._credentials(),
-            "number": payment_id,
-        }
 
-        response = requests.post('https://api.life-pay.ru/v1/bill/cancellation', json=payload)
-        data = response.json()
+def cancel_payment(payment_id: str):
+    return _call("post", "bill/cancellation", number=payment_id)["data"]
 
-        log(f"cancel_payment: payment_id={payment_id} status_code={response.status_code} response={data}")
 
-        if data["code"] != 0:
-            raise SbpServiceException(data["message"])
+def make_refund(payment_id: str):
+    """Неоплаченный счёт отменяет, оплаченный возвращает"""
+    status = get_payment_status(payment_id)
 
-        return data["data"]
+    log(f"make_refund: payment_id={payment_id} status_check={status}")
 
-    @staticmethod
-    def make_refund(payment_id: str):
-        transaction = SbpService.get_payment_status(payment_id)
+    if status["status"] != "successful":
+        return cancel_payment(payment_id)
 
-        log(f"make_refund: payment_id={payment_id} status_check={transaction}")
-
-        if transaction["status"] != "successful":
-            return SbpService.cancel_payment(payment_id)
-
-        payload = {
-            **SbpService._credentials(),
-            "number": payment_id,
-        }
-
-        response = requests.post('https://api.life-pay.ru/v1/transactions/refund', json=payload)
-        data = response.json()
-
-        log(f"make_refund: refund request payment_id={payment_id} status_code={response.status_code} response={data}")
-
-        if data["code"] != 0:
-            raise SbpServiceException(data["message"])
-
-        return data["data"]
+    return _call("post", "transactions/refund", number=payment_id)["data"]

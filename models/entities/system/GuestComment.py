@@ -1,10 +1,9 @@
 from sqlalchemy import func
 
 from db import db
-from models.abstract import AbstractBaseModel
 
 
-class GuestComment(AbstractBaseModel):
+class GuestComment(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
 
     text = db.Column(db.Text, nullable=False, default="")

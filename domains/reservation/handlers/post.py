@@ -9,12 +9,11 @@ from models import EmployeeRoleEnum, Room, Guest, Certificate, CertificateStatus
 from typings import UserJwtIdentity
 from utils.convert_tz import convert_tz
 from utils.is_date_in_last import is_date_in_last
-from utils.parse_json import parse_json
 
 
 def create_reservation():
     identity: UserJwtIdentity = get_jwt_identity()
-    data = parse_json(request.data)
+    data = request.get_json(force=True)
     role = identity["role"]
 
     if EmployeeRoleEnum[role] == EmployeeRoleEnum.operator:

@@ -1,5 +1,4 @@
 from datetime import timedelta
-from functools import reduce
 
 from sqlalchemy import event, func
 
@@ -7,13 +6,12 @@ from db import db
 from models.enums.TransactionStatusEnum import TransactionStatusEnum
 from models.entities.buisness import Guest
 from models.enums.UserStatusEnum import UserStatusEnum
-from models.abstract import AbstractBaseModel
 from models.entities.buisness.Certificate import Certificate
 from models.enums.ReservationStatusEnum import ReservationStatusEnum
 from utils.convert_tz import convert_tz
 
 
-class Reservation(AbstractBaseModel):
+class Reservation(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     date = db.Column(db.DateTime, nullable=False)
     duration = db.Column(db.Integer, nullable=False)
@@ -36,9 +34,7 @@ class Reservation(AbstractBaseModel):
 
     @property
     def sum_of_transactions(self):
-        return reduce(lambda sum, t: sum + t.sum,
-                      filter(lambda t: t.transaction_status == TransactionStatusEnum.completed,
-                             self.transactions), 0) or 0
+        return sum(t.sum for t in self.transactions if t.transaction_status == TransactionStatusEnum.completed)
 
     @staticmethod
     def to_json(reservation: 'Reservation'):

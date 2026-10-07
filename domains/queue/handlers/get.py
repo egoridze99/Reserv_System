@@ -7,7 +7,6 @@ from sqlalchemy.orm import aliased
 from db import db
 from models import ReservationQueue, QueueStatusEnum, Room, Guest, Cinema, City
 from models.dictionaries import queue_room
-from utils.inersection import intersection
 
 
 def get_queue():
@@ -121,7 +120,7 @@ def search_in_queue():
     queue: list['ReservationQueue'] = queue_query.all()
 
     if rooms:
-        rooms_id = json.loads(rooms)
-        queue = list(filter(lambda i: intersection([room.id for room in i.rooms], rooms_id), queue))
+        rooms_id = set(json.loads(rooms))
+        queue = [item for item in queue if rooms_id & {room.id for room in item.rooms}]
 
     return jsonify([ReservationQueue.to_json(item) for item in queue]), 200

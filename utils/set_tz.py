@@ -1,9 +1,11 @@
 import datetime
 
 
-def set_tz(date: datetime.datetime, tz: str):
+def parse_offset(tz: str) -> datetime.timezone:
+    """'+07:00' -> timezone(+7ч)"""
     offset_hours, offset_minutes = map(int, tz.split(':'))
-    offset = datetime.timedelta(hours=offset_hours, minutes=offset_minutes)
-    tz = datetime.timezone(offset)
+    return datetime.timezone(datetime.timedelta(hours=offset_hours, minutes=offset_minutes))
 
-    return date.replace(tzinfo=tz)
+
+def set_tz(date: datetime.datetime, tz: str):
+    return date.replace(tzinfo=parse_offset(tz))

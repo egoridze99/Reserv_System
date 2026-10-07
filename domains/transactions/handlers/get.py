@@ -1,7 +1,7 @@
 from datetime import datetime, time, timedelta
 
 from flask import jsonify, request
-from sqlalchemy import text, or_, func, not_, and_
+from sqlalchemy import or_, func, not_, and_
 from sqlalchemy.orm import aliased
 from sqlalchemy.sql import exists
 

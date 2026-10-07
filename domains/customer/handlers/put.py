@@ -4,15 +4,14 @@ from flask import request
 from flask_jwt_extended import get_jwt_identity
 
 from db import db
+from domains.customer.handlers.post import prepare_customer_data
 from models import Guest, GuestComment, User, GuestChangesLogs, GenderEnum
 from typings import UserJwtIdentity
-from utils.parse_date import parse_date
-from utils.parse_json import parse_json
 
 
 def edit_customer(id: int):
     identity: 'UserJwtIdentity' = get_jwt_identity()
-    data = parse_json(request.data)
+    data = request.get_json(force=True)
 
     customer = Guest.query.filter(Guest.id == id).first()
 
@@ -22,14 +21,9 @@ def edit_customer(id: int):
     if Guest.query.filter((Guest.telephone == data['telephone']) & (Guest.id != customer.id)).first() is not None:
         return {"msg": "Пользователь с таким номером телефона уже есть в системе"}, 400
 
-    if data["telephone"] is None or data["name"] is None:
-        return {"msg": "Имя и номер телефона обязательные аттрибуты"}, 400
-
-    if data["birthday_date"] is not None:
-        data["birthday_date"] = parse_date(data["birthday_date"])
-
-    if data["passport_issue_date"] is not None:
-        data["passport_issue_date"] = parse_date(data["passport_issue_date"])
+    error = prepare_customer_data(data)
+    if error:
+        return error
 
     if data["gender"] is not None:
         data["gender"] = GenderEnum.М if data["gender"] == "М" else GenderEnum.Ж
@@ -54,7 +48,7 @@ def edit_customer(id: int):
 
 def add_comment_to_customer():
     identity: UserJwtIdentity = get_jwt_identity()
-    data = parse_json(request.data)
+    data = request.get_json(force=True)
 
     customer = Guest.query.filter(Guest.id == data["customer_id"]).first()
 

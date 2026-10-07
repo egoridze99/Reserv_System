@@ -1,96 +1,47 @@
 from datetime import datetime, time, timedelta
 
-from sqlalchemy import func, case
+from sqlalchemy import func, case, and_
 
 from db import db
-from models import Transaction, Cinema, City, TransactionStatusEnum, TransactionTypeEnum
+from models import Transaction, Cinema, TransactionStatusEnum, TransactionTypeEnum
 from utils.convert_tz import convert_tz
 
 
-class CashierService:
-    @staticmethod
-    def __get_base_query(date: datetime.date, cinema_id: int):
-        cinema = Cinema.query.filter(Cinema.id == cinema_id).first()
-        min_date = convert_tz(datetime.combine(date, time(8)), cinema.city.timezone, True)
-        max_date = convert_tz(datetime.combine(date + timedelta(days=1), time(8)), cinema.city.timezone, True)
+def _sum_if(condition):
+    return func.sum(case([(condition, Transaction.sum)], else_=0))
 
-        subquery = (
-            db.session.query(
-                func.sum(Transaction.sum).label("total_sum"),
-                func.sum(
-                    case([(Transaction.sum >= 0, Transaction.sum)], else_=0)
-                ).label("income_sum"),
-                func.sum(
-                    case([(Transaction.sum < 0, Transaction.sum)], else_=0)
-                ).label("expense_sum"),
-                func.sum(
-                    case([(Transaction.sum >= 0,
-                           case([(Transaction.transaction_type == TransactionTypeEnum.cash, Transaction.sum)],
-                                else_=0))], else_=0)
-                ).label("cash_sum"),
-                func.sum(
-                    case([(Transaction.sum >= 0,
-                           case([(Transaction.transaction_type == TransactionTypeEnum.card, Transaction.sum)],
-                                else_=0))], else_=0)
-                ).label("card_sum"),
-                func.sum(
-                    case([(Transaction.sum >= 0,
-                           case([(Transaction.transaction_type == TransactionTypeEnum.sbp, Transaction.sum)],
-                                else_=0))], else_=0)
-                ).label("sbp_sum")
-            )
-            .join(Cinema)
-            .join(City)
-            .filter(Transaction.cinema_id == cinema_id)
-            .filter(Transaction.transaction_status == TransactionStatusEnum.completed)
-            .filter(Transaction.created_at.between(min_date, max_date))
-            .params(target_date=date)
-            .subquery()
-        )
 
-        return db.session.query(subquery.c.total_sum, subquery.c.income_sum, subquery.c.expense_sum,
-                                subquery.c.cash_sum, subquery.c.card_sum, subquery.c.sbp_sum)
+def get_cashier_info(date: datetime.date, cinema_id: int):
+    """Касса кинотеатра за смену: с 8:00 date до 8:00 следующего дня по местному времени"""
+    cinema = Cinema.query.filter(Cinema.id == cinema_id).first()
+    min_date = convert_tz(datetime.combine(date, time(8)), cinema.city.timezone, True)
+    max_date = convert_tz(datetime.combine(date + timedelta(days=1), time(8)), cinema.city.timezone, True)
 
-    @staticmethod
-    def __get_cashier_start_base_query(date: datetime.date, cinema_id: int):
-        cinema = Cinema.query.filter(Cinema.id == cinema_id).first()
-        min_date = convert_tz(datetime.combine(date, time(8)), cinema.city.timezone, True)
+    completed = db.session.query(Transaction) \
+        .filter(Transaction.cinema_id == cinema_id) \
+        .filter(Transaction.transaction_status == TransactionStatusEnum.completed)
 
-        return db.session.query(
-            func.sum(Transaction.sum)
-        ) \
-            .join(Cinema) \
-            .join(City) \
-            .filter(Transaction.cinema_id == cinema_id) \
-            .filter(Transaction.transaction_status == TransactionStatusEnum.completed) \
-            .filter(Transaction.created_at < min_date) \
-            .filter(Transaction.transaction_type == TransactionTypeEnum.cash) \
-            .params(target_date=date)
+    is_income = Transaction.sum >= 0
+    income, expense, all_by_cash, all_by_card, all_by_sbp = (value or 0 for value in completed.with_entities(
+        _sum_if(is_income),
+        _sum_if(Transaction.sum < 0),
+        _sum_if(and_(is_income, Transaction.transaction_type == TransactionTypeEnum.cash)),
+        _sum_if(and_(is_income, Transaction.transaction_type == TransactionTypeEnum.card)),
+        _sum_if(and_(is_income, Transaction.transaction_type == TransactionTypeEnum.sbp)),
+    ).filter(Transaction.created_at.between(min_date, max_date)).one())
 
-    @staticmethod
-    def get_cashier_info(date: datetime.date, cinema_id: int):
-        base_data = CashierService.__get_base_query(date, cinema_id).first()
-        cashier_start_income = CashierService.__get_cashier_start_base_query(date, cinema_id).filter(
-            Transaction.sum >= 0).scalar() or 0
-        cashier_start_expense = CashierService.__get_cashier_start_base_query(date, cinema_id).filter(
-            Transaction.sum < 0).scalar() or 0
+    cashier_start = completed.with_entities(func.sum(Transaction.sum)) \
+        .filter(Transaction.created_at < min_date) \
+        .filter(Transaction.transaction_type == TransactionTypeEnum.cash) \
+        .scalar() or 0
 
-        income = base_data.income_sum or 0
-        expense = base_data.expense_sum or 0
-        proceeds = income + expense
-        all_by_cash = base_data.cash_sum or 0
-        all_by_card = base_data.card_sum or 0
-        all_by_sbp = base_data.sbp_sum or 0
-        cashier_start = cashier_start_income + cashier_start_expense
-        cashier_end = cashier_start + expense + all_by_cash
-
-        return {
-            "income": income,
-            "expense": expense,
-            "proceeds": proceeds,
-            "all_by_cash": all_by_cash,
-            "all_by_card": all_by_card,
-            "all_by_sbp": all_by_sbp,
-            "cashier_start": cashier_start,
-            "cashier_end": cashier_end
-        }
+    return {
+        "income": income,
+        "expense": expense,
+        "proceeds": income + expense,
+        "all_by_cash": all_by_cash,
+        "all_by_card": all_by_card,
+        "all_by_sbp": all_by_sbp,
+        "cashier_start": cashier_start,
+        "cashier_end": cashier_start + expense + all_by_cash
+    }

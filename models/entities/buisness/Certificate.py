@@ -3,7 +3,6 @@ from sqlalchemy import func
 from sqlalchemy.orm import backref
 
 from db import db
-from models.abstract import AbstractBaseModel
 from models.entities.buisness.User import User
 from models.entities.buisness.Cinema import Cinema
 from models.entities.buisness.Guest import Guest
@@ -12,7 +11,7 @@ from models.enums.CertificateStatusEnum import CertificateStatusEnum
 from utils.convert_tz import convert_tz
 
 
-class Certificate(AbstractBaseModel):
+class Certificate(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     ident = db.Column(db.String(6), unique=True)
     created_at = db.Column(db.DateTime, default=func.localtimestamp())

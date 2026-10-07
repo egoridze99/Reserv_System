@@ -6,14 +6,13 @@ from flask_jwt_extended import create_access_token
 from sqlalchemy import and_
 
 from models import User, UserStatusEnum
-from utils.parse_json import parse_json
 
 
 def login():
     if not request.is_json:
         return jsonify({"msg": "Ошибка сервера"}), 400
 
-    data = parse_json(request.data)
+    data = request.get_json(force=True)
 
     username = data["login"] or None
     password = data["password"] or None

@@ -1,11 +1,10 @@
 from sqlalchemy.orm import backref
 
-from models.abstract import AbstractBaseModel
 from db import db
 from models.entities.buisness.Room import Room
 
 
-class Cinema(AbstractBaseModel):
+class Cinema(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     name = db.Column(db.String(40), nullable=False)
 
