@@ -8,14 +8,16 @@ queue_room = db.Table('queue_room',
 
 reservation_transaction_dict = db.Table('reservation_transaction_dict', db.Column('reservation_id', db.Integer,
                                                                                   db.ForeignKey("reservation.id",
-                                                                                                name="reservation_id")),
-                                        db.Column('transaction_id', db.Integer,
+                                                                                                name="reservation_id"),
+                                                                                  index=True),
+                                        db.Column('transaction_id', db.String,
                                                   db.ForeignKey("transaction.id", name="transaction_id"), unique=True))
 
 certificate_transaction_dict = db.Table('certificate_transaction_dict', db.Column('certificate_id', db.Integer,
                                                                                   db.ForeignKey("certificate.id",
-                                                                                                name="certificate_id")),
-                                        db.Column('transaction_id', db.Integer,
+                                                                                                name="certificate_id"),
+                                                                                  index=True),
+                                        db.Column('transaction_id', db.String,
                                                   db.ForeignKey("transaction.id", name="transaction_id"), unique=True))
 
 guest_comment_dict = db.Table('guest_comment_dict',
